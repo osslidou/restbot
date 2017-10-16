@@ -1,0 +1,46 @@
+<html>
+
+<head>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+	<script src="popup.js"></script>
+	<style>
+		html,
+		body {
+			width: 100%;
+		}
+		
+		textarea {
+			border: 1px solid #999999;
+			width: 80%;
+			height: 200px;
+			margin: 5px 0;
+			padding: 5px;
+		}
+		
+		#dropzone {
+			width: 80%;
+			height: 50px;
+			border: 1px solid #999999;
+             background-color: lightblue;
+		}
+		
+		#inner {
+			text-align: center;
+			line-height: 20px;
+		}
+	</style>
+</head>
+
+<body>
+
+	<div id="dropzone">
+		<div id="inner"><b>Drag & drop Config files here</b><br/>(url.js and/or func.js)</div>
+	</div>
+	<br/><br/>url.js<br/>
+	<textarea id="rules" readonly></textarea>
+	<br/><br/>func.js<br/>
+	<textarea id="functions" readonly></textarea>
+	<ul id='list' />
+</body>
+
+</html>

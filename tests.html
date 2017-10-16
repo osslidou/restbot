@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>test page</title>
+</head>
+
+<body>
+    <h1 id='firstTitle'>Title1</h1>
+    <div class='text'>Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard
+        dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen
+        book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially
+        unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and
+        more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.</div>
+    <div class='text'>It is a long established fact that a reader will be distracted by the readable content of a page when looking at its
+        layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to
+        using 'Content here, content here', making it look like readable English. Many desktop publishing packages and web
+        page editors now use Lorem Ipsum as their default model text, and a search for 'lorem ipsum' will uncover many web
+        sites still in their infancy. Various versions have evolved over the years, sometimes by accident, sometimes on purpose
+        (injected humour and the like).</div>
+    <div>
+        <ul class='list1'>
+            <li>item 1</li>
+            <li>item 2</li>
+            <li>item 3</li>
+        </ul>
+    </div>
+
+    <div id='inputs'>
+        
+        <input type="checkbox" checked="checked" />
+        <input id ="input_text" type="text" value="initial" />
+        <div class="buttons">
+            <input id="setvalue" type="button" value="setvalue" onclick="getElementById('result').innerHTML='clicked'">
+            <input id="visibility" type="button" value="visibility" onmouseover="getElementById('result').style.visibility = 'hidden'"
+            onmouseout="getElementById('result').style.visibility = 'visible'">
+            <input id="clearvalue" type="button" value="clearvalue" onclick="getElementById('result').innerHTML=''">
+            <input id="openTab" type="button" value="openTab" onclick="var win = window.open('http://localhost:8082/tests.html', '_blank');">
+            <input id="openPopup" type="button" value="openPopup" onclick="var win = window.open('http://localhost:8082/tests.popup.html', 'newwindow', 'width=300, height=250');">
+            <input id="openConfirm" type="button" value="openConfirm" onclick="if(confirm('are you sure?')) document.getElementById('openConfirm').value= 'confirm_yes'">
+        </div>
+
+    </div>
+
+    <div id='result'></div>
+
+    <iframe src="http://localhost:8082/tests.html" width="100%" height="400px;" />
+</body>
+
+</html>
