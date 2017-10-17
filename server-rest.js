@@ -26,10 +26,13 @@ var deleteFolderRecursive = function (path) {
 module.exports = {
     start: function (port, browserPath, browserUserDataFolder, serverData, callback) {
         var app = express();
-        app.listen(port, function () {
+
+        const REQUEST_TIMEOUT_IN_MS = 600000; // 10mins
+        const server = app.listen(port, function () {
             console.log("restbot running at http://localhost:" + port + "/\n");
             callback(this);
         });
+        server.timeout = REQUEST_TIMEOUT_IN_MS;
 
         app.use(bodyParser.json()); // for parsing application/json
         app.use(bodyParser.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
