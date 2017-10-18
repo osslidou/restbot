@@ -118,7 +118,7 @@ mod.main = function* () {
         yield api.get('b3', '/errors', { value: [] });
         yield api.del('b3');
 
-        console.log('_____ tabs : info / set_active / close');
+        console.log('_____ views : info / set_active / close');
         var tabInfo = yield api.get('b1', '/views');
         var initialTabCount = tabInfo.value.length;
 
@@ -145,6 +145,16 @@ mod.main = function* () {
 
         for (var i = initialTabCount; i < tabInfo.value.length; i++)
             yield api.del('b1', '/views/' + tabInfo.value[i].id);
+
+        console.log('_____ views : position-size');
+        const TARGET_WIDTH = 640, TARGET_HEIGHT = 480, TARGET_TOP = 0, TARGET_LEFT = 1;
+        yield api.put('b1', '/views', { width: TARGET_WIDTH, height: TARGET_HEIGHT, top: TARGET_TOP, left: TARGET_LEFT });
+        var info = yield api.get('b1', '/views');
+        if (info.value[0].width !== TARGET_WIDTH
+            || info.value[0].height !== TARGET_HEIGHT
+            || info.value[0].top !== TARGET_TOP
+            || info.value[0].left !== TARGET_LEFT)
+            throw new Error('Failed to set window position and size');
 
         console.log('_____ tabs: error scenarios');
         yield api.del('b1', '/views/999', null, { code: 500 });

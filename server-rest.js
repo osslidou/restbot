@@ -192,13 +192,20 @@ module.exports = {
 
         app.use('/:id/views*', function (req, res, next) {
             // accesses the browser's views
+            let hasTabParam = req.params[0];
+
             switch (req.method) {
                 case "GET": req.socketData.cmd = "get_views_info"; break;
-                case "PUT": req.socketData.cmd = "set_active_view"; break;
                 case "DELETE": req.socketData.cmd = "close_view"; break;
+                case "PUT":
+                    if (hasTabParam)
+                        req.socketData.cmd = "set_active_view";
+                    else
+                        req.socketData.cmd = "set_views_info";
+                    break;
             }
 
-            if (req.params[0])
+            if (hasTabParam)
                 req.socketData.tabId = parseInt(req.params[0].substring(1));
 
             next();

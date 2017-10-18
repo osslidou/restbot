@@ -129,8 +129,8 @@ set_var also supports functions to find the node to be tagged. In the context of
 Wait the specified amount of time in seconds.  
 `[PUT] http://restbot-vm1/browser1/?sleep{ value: '5' }`  
 
-### Working with multiple tabs and/or pages
-If your web application is opening tabs or popup pages, you can use the functions below to work with them.
+### Interacting with the view - tabs and window
+If your web application is opening tabs or popup pages, you can use the functions below to work with them. You can also change browser size and position properties.
 
 **get**  
 This returns an array of viewInfo objects. Each object has the id of the tab/popup.  
@@ -148,6 +148,10 @@ Close a tab/popup, identified by its ID
 **set_active**  
 Change the active tab/popup  
 `[PUT] http://restbot-vm1/browser1/views/id1`
+
+**set_views_info**  
+Update the browser size and position  
+`[PUT] http://restbot-vm1/browser1/views { width: 640, height: 480, top: 10, left: 10 }`
 
 ### Accessing local cookies
 You can get, set and delete cookies with the following functions:

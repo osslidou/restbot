@@ -36,9 +36,17 @@ function runActionInBrowser(socket, data) {
                         remainingWindows--;
                         tabs.forEach(function (tab) {
                             var viewInfo = {
-                                id: tab.id, index: tab.index, isActive: tab.active, url: tab.url, title: tab.title,
+                                id: tab.id,
+                                index: tab.index,
+                                isActive: tab.active,
+                                url: tab.url, title:
+                                tab.title,
                                 windowId: window.id,
-                                windowType: window.type
+                                windowType: window.type,
+                                top: window.top,
+                                left: window.left,
+                                width: window.width,
+                                height: window.height
                             };
                             retval.push(viewInfo);
                         });
@@ -84,6 +92,25 @@ function runActionInBrowser(socket, data) {
 
                 socket.emit('cmd_out', data);
                 console.log('--' + data.cmd + ' done:', data);
+            });
+            break;
+
+        case "set_views_info":
+            chrome.windows.getCurrent(function (wind) {
+                var updateInfo = {};
+                // data is passed as string, we cannot use || since a top/left position of (0,0) should be supported
+                if (data.top)
+                    updateInfo.top = parseInt(data.top)
+                if (data.left)
+                    updateInfo.left = parseInt(data.left)
+                if (data.width)
+                    updateInfo.width = parseInt(data.width)
+                if (data.height)
+                    updateInfo.height = parseInt(data.height)
+
+                chrome.windows.update(wind.id, updateInfo, function (window) {
+                    socket.emit('cmd_out', data);
+                });
             });
             break;
 
