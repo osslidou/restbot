@@ -40,7 +40,7 @@ module.exports = {
         app.use(function (req, res, next) {
             // cross origin
             res.header("Access-Control-Allow-Origin", "*");
-            res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, x-timeout-in-sec");
+            res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, x-timeout-in-sec", "x-throttle-requests-in-ms");
             res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE");
 
             // no cache
@@ -48,7 +48,14 @@ module.exports = {
             res.header('Expires', '-1');
             res.header('Pragma', 'no-cache');
 
-            next();
+            var throttleRequestInSecs = req.headers["x-throttle-requests-in-ms"];
+            if (throttleRequestInSecs) {
+                setTimeout(function () {
+                    next();
+                }, throttleRequestInSecs);
+            }
+            else
+                next();
         });
 
         app.get('/', function (req, res) {

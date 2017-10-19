@@ -66,6 +66,10 @@ To access iframe contents, use the contents() function in the url, like this:
 ### Running actions
 The API supports the following actions:
 
+**wait_exists**  
+Waits for an element to exist, using the 'x-timeout-in-sec' header parameter (or succeeds/fails immediately of no timeout value is passed)
+`[GET] http://restbot-vm1/browser1/doc/form?wait_exists`
+
 **check_exists**  
 Check if an element exist - returns true or false. The request always returns a status 200, even though the element does not exist.  
 `[GET] http://restbot-vm1/browser1/doc/form?check_exists`
@@ -92,7 +96,7 @@ Take a jpeg screenshot. The image is returned as Data URI (jpeg base64 encoded)
 `[GET] http://restbot-vm1/browser1/doc?screenshot`
 
 **set_value** (value)  
-Set the value of the element  
+Set the value of the element/attribute/property
 `[PUT] http://restbot-vm1/browser1/doc/form/div/input?set_value { value: 'vancouver' }`  
 
 **focus** (value)  

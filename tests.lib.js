@@ -36,7 +36,7 @@ module.exports = function (hostname, port) {
             path: (path || '')
         };
 
-        request.timeout = (typeof timeout === 'undefined') ? 10 : timeout;
+        request.timeout = (typeof timeout === 'undefined') ? 1 : timeout;
         if (postData)
             request.postData = postData;
 
@@ -202,20 +202,27 @@ module.exports = function (hostname, port) {
             return;
         }
 
-        displayMenu();
-        var stdin = process.openStdin();
-        stdin.addListener("data", function (d) {
-            var userInput = d.toString().trim();
-            var functionEntry = module.testFunctions[userInput];
+        if (module.testFunctions.length == 1) {
+            // do not show the menu when there is just one test case!
+            var functionEntry = module.testFunctions[0];
+            module.it = functionEntry.func();
+            module.it.next();
+        } else {
+            displayMenu();
+            var stdin = process.openStdin();
+            stdin.addListener("data", function (d) {
+                var userInput = d.toString().trim();
+                var functionEntry = module.testFunctions[userInput];
 
-            if (!functionEntry)
-                displayMenu();
+                if (!functionEntry)
+                    displayMenu();
 
-            else {
-                module.it = functionEntry.func();
-                module.it.next();
-            }
-        });
+                else {
+                    module.it = functionEntry.func();
+                    module.it.next();
+                }
+            });
+        }
 
         /*
                 call required init method with parameters passed as input

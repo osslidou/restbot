@@ -59,13 +59,25 @@ function messageListener(request, sender, sendResponse) {
                     data.retVal = true;
                     break;
 
+                case "wait_exists":
+                    data.retVal = true;
+                    break;
+
                 case "check_visible":
                     var hidden = elem.is(":hidden") || elem.css("visibility") == "hidden";
                     data.retVal = !hidden;
                     break;
 
                 case "set_value":
-                    elem.val(data.value);
+                    if (node.attributeName)
+                        elem.attr(node.attributeName, data.value);
+
+                    else if (node.propertyName)
+                        elem.prop(node.propertyName, data.value);
+
+                    else
+                        elem.val(data.value);
+
                     dispatchManualEvent(elem, 'change');
                     dispatchManualEvent(elem, 'input');
                     break;
@@ -235,7 +247,8 @@ function getNodeAtPath(data) {
 }
 
 function dispatchManualEvent(element, eventName) {
-    element[0].dispatchEvent(new Event(eventName));
+    var event = new Event(eventName, { bubbles: true });
+    element[0].dispatchEvent(event);
 }
 
 function createMouseEvent(elem, eventName) {

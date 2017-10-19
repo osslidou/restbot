@@ -40,7 +40,10 @@ mod.main = function* () {
         yield api.get('b1', '/doc/id=inputs/input/eq(1)^value', { value: 'updated' });
         yield api.get('b1', '/doc/id=inputs/input/eq(1)@value', { value: 'initial' });
 
-        console.log('_____ mouse + check visibility + check exists');
+        yield api.put('b1', '/doc/id=inputs/input/eq(1)@name?set_value', { value: 'name1' });
+        yield api.get('b1', '/doc/id=inputs/input/eq(1)@name', { value: 'name1' });
+
+        console.log('_____ mouse + check visibility + check exists + wait exists');
         yield api.get('b1', '/doc/id=result?get_text', { value: '' });
         yield api.put('b1', '/doc/id=inputs/.buttons/input/eq(0)?click');
         yield api.get('b1', '/doc/id=result?get_text', { value: 'clicked' });
@@ -53,6 +56,9 @@ mod.main = function* () {
 
         yield api.get('b1', '/doc/id=result?check_exists', { value: true });
         yield api.get('b1', '/doc/id=result_bad?check_exists', { value: false }, 0);
+
+        yield api.get('b1', '/doc/id=result?wait_exists', { value: true });
+        yield api.get('b1', '/doc/id=result_bad?wait_exists', { code: 404 });
 
         console.log('_____ set var');
         yield api.post('b1', '/doc/div/.list1?set_var');
