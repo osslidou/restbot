@@ -60,9 +60,6 @@ A similar syntax exists to access the property of an element - with the ^ sy
 `[GET] http://restbot-vm1/browser1/doc/input^checked` - returns the checkbox's checked status
 `[GET] http://restbot-vm1/browser1/doc/body/input/parent()^tagName` - returns INPUT  
 
-To access iframe contents, use the contents() function in the url, like this:  
-`[GET] http://restbot-vm1/browser1/doc/iframe[id*=frame1]/contents()/body^tagName`
-
 ### Running actions
 The API supports the following actions:
 
@@ -79,9 +76,9 @@ Check if an element is visible - returns true or false. The request always ret
 `[GET] http://restbot-vm1/browser1/doc/form?check_visible`
 
 **get_value**  
-If the path points to an element, return its outer html, if the path points to an attribute or property, return the value. When no action is specified for a GET request, this is the default action, so you do not need to specify the trailing "?get_value" parameter.  
-`[GET] http://restbot-vm1/browser1/doc/form` - returns the form's element outer HTML  
-`[GET] http://restbot-vm1/browser1/doc/form@type` - returns the form's type attribute value  
+If the path points to an element, return its outer html, if the path points to an attribute or property, return the value.  
+`[GET] http://restbot-vm1/browser1/doc/form?get_value` - returns the form's element outer HTML  
+`[GET] http://restbot-vm1/browser1/doc/form@type?get_value` - returns the form's type attribute value  
 
 **get_text**  
 Return the element's text value ( for DIVs / H1s / ...)  
@@ -119,6 +116,14 @@ Run javascript code in the current page. This will execute a simple command. Yo
 **inject**  
 Inject a javascript fragment in the current node.  
 `[POST] http://restbot-vm1/browser1/doc?inject { value: 'window.confirm = function(){return true;};' }` ->  this removes all system confirm dialogs from the current page 
+
+**get_frames**  
+Get an array that contains the frame structure of the current page  
+`[GET] http://restbot-vm1/browser1/doc?get_frames` 
+
+**switch_frame**  
+Switch all doc-specific calls to be run into a specific frameId (int).  
+`[PUT] http://restbot-vm1/browser1/doc?switch_frame { value: 0 }` ->  value=0 means the default/top level frame
 
 **set_var**  
 Assign a new guid to the current element, and store it in the current browser variable $0. Previously set variables are pushed forward (so $1 contains the variable-before-last). The element can be referenced in the url with $0 in the url:  

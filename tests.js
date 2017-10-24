@@ -3,8 +3,6 @@ var util = require('util');
 
 var mod = {};
 
-// todo: fix problem in case: disconect from browser and start a new one!!
-
 mod.main = function* () {
     try {
         var result;
@@ -18,30 +16,30 @@ mod.main = function* () {
         yield api.get('b1', '/url', { value: testAppUrl });
 
         console.log('_____ locators');
-        yield api.get('b1', '/doc/body^tagName', { value: 'BODY' });
-        yield api.get('b1', '/doc/div/class=list1^tagName', { value: 'UL' });
-        yield api.get('b1', '/doc/div/.list1^tagName', { value: 'UL' });
+        yield api.get('b1', '/doc/body^tagName?get_value', { value: 'BODY' });
+        yield api.get('b1', '/doc/div/class=list1^tagName?get_value', { value: 'UL' });
+        yield api.get('b1', '/doc/div/.list1^tagName?get_value', { value: 'UL' });
 
         console.log('_____ functions');
-        yield api.get('b1', '/doc/div/.list1/parent()^tagName', { value: 'DIV' });
+        yield api.get('b1', '/doc/div/.list1/parent()^tagName?get_value', { value: 'DIV' });
         yield api.get('b1', '/doc/div/.list1/li/siblings()/eq(0)?get_text', { value: 'item 1' });
         yield api.get('b1', '/doc/div/.list1/li/siblings()/eq(2)?get_text', { value: 'item 3' });
 
         console.log('_____ attributes & properties');
         yield api.get('b1', '/doc/id=inputs/type=checkbox@checked?get_value', { value: 'checked' });
-        yield api.get('b1', '/doc/id=inputs/type=checkbox@checked', { value: 'checked' }); // defaults to get_value - same as previous
-        yield api.get('b1', '/doc/id=inputs/type=checkbox^checked', { value: true });
+        yield api.get('b1', '/doc/id=inputs/type=checkbox@checked', { code: 400 }); // bad request when no action is provided
+        yield api.get('b1', '/doc/id=inputs/type=checkbox^checked?get_value', { value: true });
 
         console.log('_____ count / get / set value / set focus - using attributes & properties');
         yield api.get('b1', '/doc/div/.list1/li?count', { value: 3 });
-        yield api.get('b1', '/doc/id=inputs/input/eq(1)^value', { value: 'initial' });
+        yield api.get('b1', '/doc/id=inputs/input/eq(1)^value?get_value', { value: 'initial' });
         yield api.put('b1', '/doc/id=inputs/input/eq(1)?focus');
         yield api.put('b1', '/doc/id=inputs/input/eq(1)?set_value', { value: 'updated' });
-        yield api.get('b1', '/doc/id=inputs/input/eq(1)^value', { value: 'updated' });
-        yield api.get('b1', '/doc/id=inputs/input/eq(1)@value', { value: 'initial' });
+        yield api.get('b1', '/doc/id=inputs/input/eq(1)^value?get_value', { value: 'updated' });
+        yield api.get('b1', '/doc/id=inputs/input/eq(1)@value?get_value', { value: 'initial' });
 
         yield api.put('b1', '/doc/id=inputs/input/eq(1)@name?set_value', { value: 'name1' });
-        yield api.get('b1', '/doc/id=inputs/input/eq(1)@name', { value: 'name1' });
+        yield api.get('b1', '/doc/id=inputs/input/eq(1)@name?get_value', { value: 'name1' });
 
         console.log('_____ mouse + check visibility + check exists + wait exists');
         yield api.get('b1', '/doc/id=result?get_text', { value: '' });
@@ -65,7 +63,7 @@ mod.main = function* () {
         yield api.get('b1', '/doc/$0/li/eq(0)?get_text', { value: 'item 1' });
 
         yield api.post('b1', '/doc/body/h1?set_var', { value: 'return elem.parent();' });
-        yield api.get('b1', '/doc/$0^tagName', { value: 'BODY' });
+        yield api.get('b1', '/doc/$0^tagName?get_value', { value: 'BODY' });
         yield api.get('b1', '/doc/$1/li/eq(0)?get_text', { value: 'item 1' }); // accesses one-before-last var
 
         yield api.post('b1', '/doc?set_var', { value: 'return elem.find("*:contains(\'item 2\'):last");' });
@@ -84,17 +82,7 @@ mod.main = function* () {
         console.log('_____ inject function - auto confirm system confirm messagebox');
         yield api.put('b1', '/doc?inject', { value: 'window.confirm = function(){return true;};' });
         yield api.put('b1', '/doc/id=openConfirm?click');
-        yield api.get('b1', '/doc/id=openConfirm^value', { value: 'confirm_yes' });
-
-        console.log('_____ iframe access');
-        var newId = api.newGuid();
-        yield api.put('b1', '/doc/iframe/contents()/body/id=inputs/input/eq(1)?set_value', { value: newId });
-        yield api.get('b1', '/doc/iframe/contents()/body/id=inputs/input/eq(1)^value?get_value', { value: newId });
-
-        console.log('_____ iframe injection of code');
-        yield api.put('b1', '/doc/iframe/contents()/body?inject', { value: 'window.confirm = function(){return true;};' });
-        yield api.put('b1', '/doc/iframe/contents()/body/id=openConfirm?click');
-        yield api.get('b1', '/doc/iframe/contents()/body/id=openConfirm^value', { value: 'confirm_yes' });
+        yield api.get('b1', '/doc/id=openConfirm^value?get_value', { value: 'confirm_yes' });
 
         console.log('_____ cookies access');
         yield api.put('b1', '/url', { value: testAppUrl });
@@ -139,11 +127,11 @@ mod.main = function* () {
 
         yield api.put('b1', '/views/' + tabInfo.value[1].id);
         yield api.put('b1', '/doc/id=input_text?set_value', { value: 'hello from other tab' });
-        result = yield api.get('b1', '/doc/id=input_text^value');
+        result = yield api.get('b1', '/doc/id=input_text^value?get_value');
         var textValueInOtherTab = result.value;
 
         yield api.put('b1', '/views/' + tabInfo.value[0].id);
-        result = yield api.get('b1', '/doc/id=input_text^value');
+        result = yield api.get('b1', '/doc/id=input_text^value?get_value');
         var textValueInFirstTab = result.value;
 
         if (textValueInFirstTab === textValueInOtherTab)
@@ -152,16 +140,6 @@ mod.main = function* () {
         for (var i = initialTabCount; i < tabInfo.value.length; i++)
             yield api.del('b1', '/views/' + tabInfo.value[i].id);
 
-        console.log('_____ views : position-size');
-        const TARGET_WIDTH = 640, TARGET_HEIGHT = 480, TARGET_TOP = 0, TARGET_LEFT = 1;
-        yield api.put('b1', '/views', { width: TARGET_WIDTH, height: TARGET_HEIGHT, top: TARGET_TOP, left: TARGET_LEFT });
-        var info = yield api.get('b1', '/views');
-        if (info.value[0].width !== TARGET_WIDTH
-            || info.value[0].height !== TARGET_HEIGHT
-            || info.value[0].top !== TARGET_TOP
-            || info.value[0].left !== TARGET_LEFT)
-            throw new Error('Failed to set window position and size');
-
         console.log('_____ tabs: error scenarios');
         yield api.del('b1', '/views/999', null, { code: 500 });
 
@@ -169,6 +147,18 @@ mod.main = function* () {
         var finalCount = result.value.length;
         if (finalCount != initialTabCount)
             throw new Error('Failed to close the last 2 tabs');
+
+        console.log('______ refresh, back, forward')
+        yield api.put('b1', '/doc/id=inputs/input/eq(1)?set_value', { value: 'updated' });
+        yield api.get('b1', '/doc/id=inputs/input/eq(1)^value?get_value', { value: 'updated' });
+        yield api.put('b1', '/doc?refresh');
+        yield api.get('b1', '/doc/id=inputs/input/eq(1)^value?get_value', { value: 'initial' });
+
+        yield api.put('b1', '/doc/id=nextPage?click');
+        yield api.put('b1', '/doc?back');
+        yield api.get('b1', '/doc/head/title?get_text', { value: 'test page' });
+        yield api.put('b1', '/doc?forward');
+        yield api.get('b1', '/doc/head/title?get_text', { value: 'popup page' });
 
         console.log('_____ kill instances');
         yield api.del('b1');
@@ -179,6 +169,17 @@ mod.main = function* () {
             yield api.del(i, '', { deleteSessionData: false });
         }
 
+        console.log('_____ views : position-size');
+        yield api.put('b1');
+        const TARGET_WIDTH = 640, TARGET_HEIGHT = 480, TARGET_TOP = 0, TARGET_LEFT = 1;
+        yield api.put('b1', '/views', { width: TARGET_WIDTH, height: TARGET_HEIGHT, top: TARGET_TOP, left: TARGET_LEFT });
+        var info = yield api.get('b1', '/views');
+        if (info.value[0].width !== TARGET_WIDTH
+            || info.value[0].height !== TARGET_HEIGHT
+            || info.value[0].top !== TARGET_TOP
+            || info.value[0].left !== TARGET_LEFT)
+            throw new Error('Failed to set window position and size');
+        yield api.del('b1');
         console.log("-- SUCCESS\n");
     }
     catch (e) {

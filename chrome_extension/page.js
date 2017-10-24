@@ -32,6 +32,18 @@ function messageListener(request, sender, sendResponse) {
                         data.retVal = elem.prop('outerHTML');
                     break;
 
+                case "back":
+                    window.history.back();
+                    break;
+
+                case "forward":
+                    window.history.forward();
+                    break;
+
+                case "refresh":
+                    window.location.reload(true);
+                    break;
+
                 case "get_cookie":
                     if (data.cookieName) {
                         data.retVal = getCookie(data.cookieName);
@@ -212,7 +224,7 @@ function getNodeAtPath(data) {
                     if (document.restbot_vars[index] !== undefined)
                         retVal.elem = retVal.elem.find('*[restbot_var="' + document.restbot_vars[index] + '"]');
                     else
-                        throw new Error('variable index $' + index + ' referenced but was never set');
+                        throw new Error('variable index $' + index + ' referenced but was never set in the path :' + data.path);
                 }
 
                 else if (segment.substr(segment.length - 1) === ')') {

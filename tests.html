@@ -27,13 +27,13 @@
     </div>
 
     <div id='inputs'>
-        
+
         <input type="checkbox" checked="checked" />
-        <input id ="input_text" type="text" value="initial" />
+        <input id="input_text" type="text" value="initial" />
         <div class="buttons">
             <input id="setvalue" type="button" value="setvalue" onclick="getElementById('result').innerHTML='clicked'">
             <input id="visibility" type="button" value="visibility" onmouseover="getElementById('result').style.visibility = 'hidden'"
-            onmouseout="getElementById('result').style.visibility = 'visible'">
+                onmouseout="getElementById('result').style.visibility = 'visible'">
             <input id="clearvalue" type="button" value="clearvalue" onclick="getElementById('result').innerHTML=''">
             <input id="openTab" type="button" value="openTab" onclick="var win = window.open('http://localhost:8082/tests.html', '_blank');">
             <input id="openPopup" type="button" value="openPopup" onclick="var win = window.open('http://localhost:8082/tests.popup.html', 'newwindow', 'width=300, height=250');">
@@ -43,6 +43,7 @@
     </div>
 
     <div id='result'></div>
+    <a href="tests.popup.html" id="nextPage">next page</a>
 
     <iframe src="http://localhost:8082/tests.html" width="100%" height="400px;" />
 </body>

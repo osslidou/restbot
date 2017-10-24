@@ -2,9 +2,15 @@ const APP_PORT = 8081;
 var apiUrl = 'http://localhost:' + APP_PORT + '/';
 
 var pageErrors = [];
+var activeFrameId = 0;
+var dep_page = {};
+var dep_jquery = {};
 
-chrome.tabs.onUpdated.addListener(injectDependenciesAfterPageLoaded);
 chrome.runtime.onMessage.addListener(pageErrorsListener);
+
+// note: both events are required
+chrome.webNavigation.onDOMContentLoaded.addListener(injectDependencies);
+chrome.webNavigation.onReferenceFragmentUpdated.addListener(injectDependencies);
 
 setupSocketClient(apiUrl);
 
@@ -15,6 +21,7 @@ function setupSocketClient(apiUrl) {
 
     socket.on('cmd', function (data) {
         console.log('cmd: ' + data.cmd);
+        data.frameId = activeFrameId;
         runActionInBrowser(socket, data);
     });
 
@@ -201,6 +208,53 @@ function runActionInActivePage(socket, tab, data) {
             });
             break;
 
+        case "fullpage_screenshot":
+            var tabId = tab.id;
+            var version = "1.0";
+            var debuggeeId = { tabId: tabId };
+            let clip = {};
+
+            chrome.debugger.attach(debuggeeId, version, function () {
+                chrome.debugger.sendCommand(debuggeeId, "Page.getLayoutMetrics", function (metrics) {
+                    const width = Math.ceil(metrics.contentSize.width);
+                    const height = Math.ceil(metrics.contentSize.height);
+                    clip = { x: 0, y: 0, width, height, scale: 1 };
+                    chrome.debugger.sendCommand(debuggeeId, "Emulation.setDeviceMetricsOverride", {
+                        width: width,
+                        height: height,
+                        deviceScaleFactor: 1,
+                        mobile: false,
+                        dontSetVisibleSize: false
+                    }, function () {
+                        /*chrome.debugger.sendCommand(debuggeeId, "Emulation.setVisibleSize", {
+                            width: width,
+                            height: height,
+                        }, function () {
+                        */
+                        setTimeout(async function () {
+                            chrome.debugger.sendCommand(debuggeeId, "Page.captureScreenshot", { format: "png", quality: 100 },
+                                function (result) {
+                                    data.retVal = result;
+                                    socket.emit('cmd_out', data);
+                                });
+                        }, 1000); /* enough time for chrome to process the changes (even though we are running in a callback!!?!) */
+                    });
+                });
+            });
+            break;
+
+        case "get_frames":
+            chrome.webNavigation.getAllFrames({ tabId: tab.id }, function (framesInfo) {
+                data.retVal = framesInfo;
+                socket.emit('cmd_out', data);
+            });
+            break;
+
+        case "switch_frame":
+            activeFrameId = parseInt(data.value);
+            socket.emit('cmd_out', data);
+            break;
+
         default:
             sendMessageIntoTab(tab.id, data, function (response) {
                 console.log('response:', JSON.stringify(response));
@@ -219,36 +273,50 @@ function runActionInActivePage(socket, tab, data) {
     }
 }
 
-var dep_page = {};
-var dep_jquery = {};
+function injectDependencies(details) {
+    var url = details.url;
+    var tabId = details.tabId;
+    var frameId = details.frameId;
+    var dependency_key = `${tabId}-${frameId}`;
 
-function injectDependenciesAfterPageLoaded(tabId, changeInfo, tab) {
-    if (tab.url.startsWith("chrome://"))
+    if (url.startsWith("chrome://"))
         return;
 
-    if (changeInfo.status === "loading") {
-        chrome.tabs.executeScript(tabId, { file: "jquery-2.1.4.min.js" }, function () {
-            dep_jquery[tabId] = tab.url;
-            chrome.tabs.executeScript(tabId, { file: "page.js" }, function () {
-                dep_page[tabId] = tab.url;
-            });
+    var JQUERY_JS = "jquery-2.1.4.min.js";
+    var PAGE_JS = "page.js";
+
+    dep_jquery[dependency_key] = "";
+    dep_page[dependency_key] = "";
+
+    chrome.tabs.executeScript(tabId, { file: JQUERY_JS, allFrames: true }, function (res1) {
+        dep_jquery[dependency_key] = url;
+        chrome.tabs.executeScript(tabId, { file: PAGE_JS, allFrames: true }, function (res2) {
+            dep_page[dependency_key] = url;
         });
-    }
+    });
 }
 
 // sends the message into the page - only after having checked that the dependencies are injected
 function sendMessageIntoTab(tabId, data, callback) {
-    chrome.tabs.get(tabId, function (tab) {
-        if (dep_jquery[tabId] === tab.url && dep_page[tabId] === tab.url) {
-            chrome.tabs.sendMessage(tabId, { data: data }, function (response) {
-                callback(response);
-            });
+    var details = { tabId: tabId, frameId: data.frameId };
+    var dependency_key = `${tabId}-${data.frameId}`;
+
+    chrome.webNavigation.getFrame(details, function (info) {
+        if (info && (dep_jquery[dependency_key] === info.url && (dep_page[dependency_key] === info.url))) {
+            chrome.tabs.sendMessage(
+                tabId,
+                { data: data },
+                { frameId: data.frameId },
+                function (response) {
+                    callback(response);
+                });
         }
-        else
+        else {
             setTimeout(function () {
-                console.log('___ delay restart send message');
+                console.log(`___ delay restart send message - tabId=${tabId}, frameId=${data.frameId}, info=`, info);
                 sendMessageIntoTab(tabId, data, callback);
-            }, 50);
+            }, 500);
+        }
     });
 }
 

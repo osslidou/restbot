@@ -16,6 +16,8 @@
         "tabs",
         "<all_urls>",
         "http://*/*",
-        "https://*/*"
+        "https://*/*",
+        "webNavigation",
+        "debugger"
     ]
 }

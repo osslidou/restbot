@@ -258,8 +258,11 @@ module.exports = {
             else
                 socketData.path = '';
 
-            if (!socketData.cmd)
-                socketData.cmd = 'get_value'; /* default value if nothing passed */
+            if (!socketData.cmd) {
+                var message = `no action provided in path ${socketData.path}`;
+                handleRequestError(req, 400, message);
+                return;
+            }
 
             next();
         });
