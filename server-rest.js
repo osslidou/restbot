@@ -202,8 +202,17 @@ module.exports = {
             let hasTabParam = req.params[0];
 
             switch (req.method) {
-                case "GET": req.socketData.cmd = "get_views_info"; break;
-                case "DELETE": req.socketData.cmd = "close_view"; break;
+                case "GET":
+                    req.socketData.cmd = "get_views_info";
+                    break;
+
+                case "DELETE":
+                    if (hasTabParam)
+                        req.socketData.cmd = "close_view";
+                    else
+                        req.socketData.cmd = "close_active_view";
+                    break;
+
                 case "PUT":
                     if (hasTabParam)
                         req.socketData.cmd = "set_active_view";

@@ -255,6 +255,21 @@ function runActionInActivePage(socket, tab, data) {
             socket.emit('cmd_out', data);
             break;
 
+        case "close_active_view":
+            chrome.tabs.remove(tab.id, function (tabs) {
+
+                if (chrome.runtime.lastError) {
+                    console.log('--' + data.cmd + ' error');
+                    data.error_code = 500;
+                    data.error_message = chrome.runtime.lastError.message;
+                    socket.emit('cmd_out', data);
+                    return;
+                }
+
+                socket.emit('cmd_out', data);
+            });
+            break;
+
         default:
             sendMessageIntoTab(tab.id, data, function (response) {
                 console.log('response:', JSON.stringify(response));

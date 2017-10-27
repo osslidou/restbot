@@ -148,6 +148,18 @@ mod.main = function* () {
         if (finalCount != initialTabCount)
             throw new Error('Failed to close the last 2 tabs');
 
+        // opens another tab and attempt to close it with del(/views)
+        yield api.put('b1', '/doc/id=openTab?click');
+        tabInfo = yield api.get('b1', '/views');
+        initialTabCount = tabInfo.value.length;
+
+        yield api.del('b1', '/views');
+        var afterCloseTabInfo = yield api.get('b1', '/views');
+        var afterCloseTabCount = afterCloseTabInfo.value.length;
+
+        if ((afterCloseTabCount + 1) !== initialTabCount)
+            throw new Error('Unable to close the tab');
+
         console.log('______ refresh, back, forward')
         yield api.put('b1', '/doc/id=inputs/input/eq(1)?set_value', { value: 'updated' });
         yield api.get('b1', '/doc/id=inputs/input/eq(1)^value?get_value', { value: 'updated' });
