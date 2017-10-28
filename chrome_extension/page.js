@@ -15,7 +15,7 @@ function messageListener(request, sender, sendResponse) {
     try {
         var data = request.data;
 
-        console.log('incoming command: ' + data.cmd);
+        console.log('incoming command: ', data.cmd, ' - path:', data.path);
         var node = getNodeAtPath(data);
 
         if (!data.error_code) {

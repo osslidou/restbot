@@ -260,10 +260,13 @@ module.exports = {
             var socketData = req.socketData;
             socketData.requestExpiry = expiry.toString();
 
-            var decodedUri = url.parse(decodeURI(req.originalUrl));
+            var uri = url.parse(req.originalUrl);
 
-            if (req.params[0])
-                socketData.path = decodedUri.pathname.substring(decodedUri.pathname.indexOf(req.params[0]));
+            if (req.params[0]) {
+                var encodedParams = encodeURI(req.params[0]);
+                var fragments = uri.pathname.substring(uri.pathname.indexOf(encodedParams));
+                socketData.path = decodeURI(fragments);
+            }
             else
                 socketData.path = '';
 
