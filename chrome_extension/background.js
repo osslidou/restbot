@@ -243,15 +243,25 @@ function runActionInActivePage(socket, tab, data) {
             });
             break;
 
-        case "get_frames":
+        case "switch_frame":
+            var urlFragment = data.value;
             chrome.webNavigation.getAllFrames({ tabId: tab.id }, function (framesInfo) {
-                data.retVal = framesInfo;
+                for (let { frameId, url } of framesInfo) {
+                    if (url.includes(urlFragment)) {
+                        activeFrameId = frameId;
+                        socket.emit('cmd_out', data);
+                        return;
+                    }
+                }
+
+                data.error_code = 404;
+                data.error_message = 'Frame with path "' + urlFragment + '" not found';
                 socket.emit('cmd_out', data);
             });
             break;
 
-        case "switch_frame":
-            activeFrameId = parseInt(data.value);
+        case "reset_frame":
+            activeFrameId = 0;
             socket.emit('cmd_out', data);
             break;
 
