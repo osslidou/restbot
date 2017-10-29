@@ -284,15 +284,20 @@ function runActionInActivePage(socket, tab, data) {
             sendMessageIntoTab(tab.id, data, function (response) {
                 console.log('response:', JSON.stringify(response));
 
-                if (response === undefined)
-                    // try again, case when page moved
-                    runActionInActivePage(socket, tab, data);
+                if (typeof response == "undefined") {
+                    setTimeout(function () {
+                        console.log(`___ delay restart send message - tabId=${tab.id}, frameId=${data.frameId}`);
+                        // try again, case when page moved
+                        findActiveTabAndRunAction(socket, data);
+                    }, 500);
+                }
+                else {
+                    if (response.data.error_code)
+                        console.log('error response received from page: ' + response.data.error_message);
 
-                else if (response.data.error_code)
-                    console.log('error response received from page: ' + response.data.error_message);
-
-                socket.emit('cmd_out', response.data);
-                console.log('--' + data.cmd + ' done');
+                    socket.emit('cmd_out', response.data);
+                    console.log('--' + data.cmd + ' done');
+                }
             });
             break;
     }
@@ -335,12 +340,8 @@ function sendMessageIntoTab(tabId, data, callback) {
                 function (response) {
                     callback(response);
                 });
-        }
-        else {
-            setTimeout(function () {
-                console.log(`___ delay restart send message - tabId=${tabId}, frameId=${data.frameId}, info=`, info);
-                sendMessageIntoTab(tabId, data, callback);
-            }, 500);
+        } else {
+            callback(); // callback with no params, will trigger a retry
         }
     });
 }
