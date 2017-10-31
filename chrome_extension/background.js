@@ -1,18 +1,20 @@
 const APP_PORT = 8081;
+var JQUERY_JS = "jquery-2.1.4.min.js";
+var PAGE_JS = "page.js";
 var apiUrl = 'http://localhost:' + APP_PORT + '/';
 
 var pageErrors = [];
 var activeFrameId = 0;
-var dep_page = {};
-var dep_jquery = {};
+var contentScriptCode = '';
 
 chrome.runtime.onMessage.addListener(pageErrorsListener);
 
-// note: both events are required
-chrome.webNavigation.onDOMContentLoaded.addListener(injectDependencies);
-chrome.webNavigation.onReferenceFragmentUpdated.addListener(injectDependencies);
-
-setupSocketClient(apiUrl);
+getFileContents(JQUERY_JS, function (contents1) {
+    getFileContents(PAGE_JS, function (content2) {
+        contentScriptCode = contents1 + content2;
+        setupSocketClient(apiUrl);
+    });
+});
 
 function setupSocketClient(apiUrl) {
     console.log('Initializing websocket client ...');
@@ -27,6 +29,17 @@ function setupSocketClient(apiUrl) {
 
     // extension is started and ready - notify the server    
     socket.emit('chrome_ready');
+}
+
+function getFileContents(filename, callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', chrome.extension.getURL(filename), true);
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState == XMLHttpRequest.DONE && xhr.status == 200) {
+            callback(xhr.responseText);
+        }
+    };
+    xhr.send();
 }
 
 function runActionInBrowser(socket, data) {
@@ -303,46 +316,27 @@ function runActionInActivePage(socket, tab, data) {
     }
 }
 
-function injectDependencies(details) {
-    var url = details.url;
-    var tabId = details.tabId;
-    var frameId = details.frameId;
-    var dependency_key = `${tabId}-${frameId}`;
-
-    if (url.startsWith("chrome://"))
-        return;
-
-    var JQUERY_JS = "jquery-2.1.4.min.js";
-    var PAGE_JS = "page.js";
-
-    dep_jquery[dependency_key] = "";
-    dep_page[dependency_key] = "";
-
-    chrome.tabs.executeScript(tabId, { file: JQUERY_JS, allFrames: true }, function (res1) {
-        dep_jquery[dependency_key] = url;
-        chrome.tabs.executeScript(tabId, { file: PAGE_JS, allFrames: true }, function (res2) {
-            dep_page[dependency_key] = url;
-        });
-    });
-}
-
 // sends the message into the page - only after having checked that the dependencies are injected
 function sendMessageIntoTab(tabId, data, callback) {
     var details = { tabId: tabId, frameId: data.frameId };
     var dependency_key = `${tabId}-${data.frameId}`;
 
     chrome.webNavigation.getFrame(details, function (info) {
-        if (info && (dep_jquery[dependency_key] === info.url && (dep_page[dependency_key] === info.url))) {
-            chrome.tabs.sendMessage(
-                tabId,
-                { data: data },
-                { frameId: data.frameId },
-                function (response) {
+        chrome.tabs.sendMessage(
+            tabId,
+            { data: data },
+            { frameId: data.frameId },
+            function (response) {
+                if (response)
                     callback(response);
-                });
-        } else {
-            callback(); // callback with no params, will trigger a retry
-        }
+
+                else {
+                    chrome.tabs.executeScript(tabId, { code: contentScriptCode, allFrames: true, frameId: data.frameId }, function (resp) {
+                        callback(); // after dependencies are injected, this will invoke callback() with no params, which triggers a retry
+                    }
+                    );
+                }
+            });
     });
 }
 

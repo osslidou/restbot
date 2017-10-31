@@ -295,7 +295,7 @@ module.exports = {
         });
 
         function logCommand(browserId, socketData) {
-            var logEntryText = '[' + browserId.substr(0, 4) + '] ' + socketData.cmd;
+            var logEntryText = '[' + browserId.substr(0, 5) + '] ' + socketData.cmd;
 
             if (socketData.path !== undefined)
                 logEntryText += ' ' + socketData.path;
