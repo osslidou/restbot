@@ -68,7 +68,14 @@ function messageListener(request, sender, sendResponse) {
                     break;
 
                 case "check_exists":
-                    data.retVal = true;
+                    if (node.attributeName)
+                        data.retVal = elem[0].hasAttribute(node.attributeName);
+
+                    else if (node.propertyName)
+                        data.retVal = elem[0].hasAttribute(node.propertyName);
+
+                    else
+                        data.retVal = true;
                     break;
 
                 case "wait_exists":

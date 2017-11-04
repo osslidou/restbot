@@ -64,7 +64,7 @@ A similar syntax exists to access the property of an element - with the ^ sy
 The API supports the following actions:
 
 **wait_exists**  
-Waits for an element to exist, using the 'x-timeout-in-sec' header parameter (or succeeds/fails immediately of no timeout value is passed)
+Waits for an element to exist, using the 'x-timeout-in-sec' header parameter
 `[GET] http://restbot-vm1/browser1/doc/form?wait_exists`
 
 **check_exists**  
