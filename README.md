@@ -84,6 +84,10 @@ If the path points to an element, return its outer html, if the path points to a
 Return the element's text value ( for DIVs / H1s / ...)  
 `[GET] http://restbot-vm1/browser1/doc/h1?get_text`
 
+**get_client_rect**  
+Return information about the element's clint rectangle (position / width / ...)  
+`[GET] http://restbot-vm1/browser1/doc/h1?get_client_rect`
+
 **count**  
 Return the count of elements matching the path  
 `[GET] http://restbot-vm1/browser1/doc/h1?count`

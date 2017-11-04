@@ -30,14 +30,13 @@ mod.main = function* () {
         yield api.get('b1', '/doc/id=inputs/type=checkbox@checked', { code: 400 }); // bad request when no action is provided
         yield api.get('b1', '/doc/id=inputs/type=checkbox^checked?get_value', { value: true });
 
-        console.log('_____ count / get / set value / set focus - using attributes & properties');
+        console.log('_____ count / get / set value / set focus / get_info - using attributes & properties');
         yield api.get('b1', '/doc/div/.list1/li?count', { value: 3 });
         yield api.get('b1', '/doc/id=inputs/input/eq(1)^value?get_value', { value: 'initial' });
         yield api.put('b1', '/doc/id=inputs/input/eq(1)?focus');
         yield api.put('b1', '/doc/id=inputs/input/eq(1)?set_value', { value: 'updated' });
         yield api.get('b1', '/doc/id=inputs/input/eq(1)^value?get_value', { value: 'updated' });
         yield api.get('b1', '/doc/id=inputs/input/eq(1)@value?get_value', { value: 'initial' });
-
         yield api.put('b1', '/doc/id=inputs/input/eq(1)@name?set_value', { value: 'name1' });
         yield api.get('b1', '/doc/id=inputs/input/eq(1)@name?get_value', { value: 'name1' });
 

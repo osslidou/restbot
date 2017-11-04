@@ -63,6 +63,10 @@ function messageListener(request, sender, sendResponse) {
                     data.retVal = elem.text();
                     break;
 
+                case "get_client_rect":
+                    data.retVal = elem[0].getBoundingClientRect();
+                    break;
+
                 case "count":
                     data.retVal = elem.length;
                     break;
