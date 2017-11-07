@@ -84,9 +84,9 @@ If the path points to an element, return its outer html, if the path points to a
 Return the element's text value ( for DIVs / H1s / ...)  
 `[GET] http://restbot-vm1/browser1/doc/h1?get_text`
 
-**get_client_rect**  
+**get_client_rectangle**  
 Return information about the element's clint rectangle (position / width / ...)  
-`[GET] http://restbot-vm1/browser1/doc/h1?get_client_rect`
+`[GET] http://restbot-vm1/browser1/doc/h1?get_client_rectangle`
 
 **count**  
 Return the count of elements matching the path  
@@ -98,7 +98,8 @@ Take a jpeg screenshot. The image is returned as Data URI (jpeg base64 encoded)
 
 **set_value** (value)  
 Set the value of the element/attribute/property
-`[PUT] http://restbot-vm1/browser1/doc/form/div/input?set_value { value: 'vancouver' }`  
+`[PUT] http://restbot-vm1/browser1/doc/form/div/input?set_value { value: 'value1' }`  
+`[PUT] http://restbot-vm1/browser1/doc/form/div/input@new_attribute?set_value { value: 'value2' }`  
 
 **focus** (value)  
 Focus on an element  

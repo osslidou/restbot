@@ -63,7 +63,7 @@ function messageListener(request, sender, sendResponse) {
                     data.retVal = elem.text();
                     break;
 
-                case "get_client_rect":
+                case "get_client_rectangle":
                     data.retVal = elem[0].getBoundingClientRect();
                     break;
 
