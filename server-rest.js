@@ -26,7 +26,7 @@ module.exports = {
         app.use(bodyParser.json()); // for parsing application/json
         app.use(bodyParser.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
 
-        app.use(function (req, res, next) {
+        app.use((req, res, next) => {
             // cross origin
             res.header("Access-Control-Allow-Origin", "*");
             res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, x-timeout-in-sec", "x-throttle-requests-in-ms");
@@ -39,7 +39,7 @@ module.exports = {
 
             var throttleRequestInSecs = req.headers["x-throttle-requests-in-ms"];
             if (throttleRequestInSecs) {
-                setTimeout(function () {
+                setTimeout(() => {
                     next();
                 }, throttleRequestInSecs);
             }
@@ -47,21 +47,14 @@ module.exports = {
                 next();
         });
 
-        function getOpenedBrowsersList() {
-            var result = [];
-            for (let [browserId, socket] of serverData.socketsByBrowser)
-                result.push(browserId);
-            return result;
-        }
-
-        app.get('/', function (req, res) {
+        app.get('/', (req, res) => {
             // returns array of active browserIds
             var allBrowsers = getOpenedBrowsersList();
             res.send(allBrowsers);
             console.log('[*] list');
         });
 
-        app.delete('/', function (req, res) {
+        app.delete('/', (req, res) => {
             // close/delete all opened browser
             var allBrowsers = getOpenedBrowsersList();
             for (let browserId of allBrowsers)
@@ -72,7 +65,7 @@ module.exports = {
             });
         })
 
-        app.use('/:id*', function (req, res, next) {
+        app.use('/:id*', (req, res, next) => {
             // browserId middleware: 
             // 1. gets and stores: browserId and its associated socket, 
             // 2. creates the socketData object, 
@@ -119,7 +112,7 @@ module.exports = {
             next();
         });
 
-        app.put('/:id', function (req) {
+        app.put('/:id', (req) => {
             // creates a new browser instance, defaults to chrome
             req.socketData.type = req.socketData.type || 'chrome';
             if (req.socketData.type !== 'chrome') {
@@ -158,47 +151,11 @@ module.exports = {
             logCommand(req.browserId, { cmd: 'start' })
         });
 
-        function deleteBrowser(browserId, socketData) {
-            var browser = serverData.getBrowser(browserId);
-
-            if (socketData) {
-                var requestId = socketData.requestId;
-                var res = serverData.getPendingRequest(requestId);
-                // delete from the maps first, because we capture un-expected socket disconnect
-                serverData.deletePendingRequest(requestId);
-                socketData.cmd = "kill";
-                logCommand(browserId, socketData);
-
-                browser.on('close', function (code) {
-                    // wait til process is actually closed to return 200
-                    if (socketData.deleteSessionData) {
-                        var sessionDataPath = path.resolve(browserUserDataFolder, browserId);
-                        console.log('Cleaning up sessionData "' + sessionDataPath + '"');
-                        attemptToDeleteFolderRecursive(sessionDataPath, MAX_FOLDER_DELETE_RETRIES, (httpCode) => {
-                            res.writeHead(httpCode);
-                            res.end();
-                        });
-                    } else {
-                        res.writeHead(200);
-                        res.end();
-                    }
-                });
-            }
-
-            serverData.purgeBrowserData(browserId);
-
-            //todo: use OS-prefered way to stop the process without force-killing it: issue where chrome does not write session data (browser.kill does not give chrome enough time to stop on windows
-            var spawn = childProcess.spawn;
-            //var startupArgs = ["/pid", browser.pid, "/f"];
-            var startupArgs = ["/pid", browser.pid];
-            spawn("taskkill", startupArgs)
-        }
-
-        app.delete('/:id', function (req) {
+        app.delete('/:id', (req) => {
             deleteBrowser(req.browserId, req.socketData)
         });
 
-        app.use('/:id/url', function (req, res, next) {
+        app.use('/:id/url', (req, res, next) => {
             // gets/sets the browser's url
             switch (req.method) {
                 case "GET": req.socketData.cmd = "get_url"; break;
@@ -207,7 +164,7 @@ module.exports = {
             next();
         });
 
-        app.use('/:id/views*', function (req, res, next) {
+        app.use('/:id/views*', (req, res, next) => {
             // accesses the browser's views
             let hasTabParam = req.params[0];
 
@@ -237,7 +194,7 @@ module.exports = {
             next();
         });
 
-        app.use('/:id/errors', function (req, res, next) {
+        app.use('/:id/errors', (req, res, next) => {
             // accesses the browser's errors
             switch (req.method) {
                 case "GET": req.socketData.cmd = "get_errors"; break;
@@ -246,7 +203,7 @@ module.exports = {
             next();
         });
 
-        app.use('/:id/cookies*', function (req, res, next) {
+        app.use('/:id/cookies*', (req, res, next) => {
             // access to browser cookies
             switch (req.method) {
                 case "GET": req.socketData.cmd = "get_cookie"; break;
@@ -260,7 +217,7 @@ module.exports = {
             next();
         });
 
-        app.use('/:id/doc*', function (req, res, next) {
+        app.use('/:id/doc*', (req, res, next) => {
             // interacts with the browser's html doc
             var timeOutInSeconds = req.headers["x-timeout-in-sec"];
             var expiry = new Date();
@@ -289,13 +246,13 @@ module.exports = {
             next();
         });
 
-        app.use('/:id*', function (req, res, next) {
+        app.use('/:id*', (req, res, next) => {
             // common to all previous methods: log & emit
             var socketData = req.socketData;
             logCommand(req.browserId, socketData);
 
             if (socketData.cmd === 'sleep') {
-                setTimeout(function () {
+                setTimeout(() => {
                     res.writeHead(200);
                     res.end();
                     serverData.deletePendingRequest(socketData.requestId);
@@ -303,6 +260,49 @@ module.exports = {
             } else
                 req.socket.emit('cmd', socketData);
         });
+
+        function deleteBrowser(browserId, socketData) {
+            var browser = serverData.getBrowser(browserId);
+
+            if (socketData) {
+                var requestId = socketData.requestId;
+                var res = serverData.getPendingRequest(requestId);
+                // delete from the maps first, because we capture un-expected socket disconnect
+                serverData.deletePendingRequest(requestId);
+                socketData.cmd = "kill";
+                logCommand(browserId, socketData);
+
+                browser.on('close', (code) => {
+                    // wait til process is actually closed to return 200
+                    if (socketData.deleteSessionData) {
+                        var sessionDataPath = path.resolve(browserUserDataFolder, browserId);
+                        console.log('Cleaning up sessionData "' + sessionDataPath + '"');
+                        attemptToDeleteFolderRecursive(sessionDataPath, MAX_FOLDER_DELETE_RETRIES, (httpCode) => {
+                            res.writeHead(httpCode);
+                            res.end();
+                        });
+                    } else {
+                        res.writeHead(200);
+                        res.end();
+                    }
+                });
+            }
+
+            serverData.purgeBrowserData(browserId);
+
+            //todo: use OS-prefered way to stop the process without force-killing it: issue where chrome does not write session data (browser.kill does not give chrome enough time to stop on windows
+            var spawn = childProcess.spawn;
+            //var startupArgs = ["/pid", browser.pid, "/f"];
+            var startupArgs = ["/pid", browser.pid];
+            spawn("taskkill", startupArgs)
+        }
+
+        function getOpenedBrowsersList() {
+            var result = [];
+            for (let [browserId, socket] of serverData.socketsByBrowser)
+                result.push(browserId);
+            return result;
+        }
 
         function logCommand(browserId, socketData) {
             var logEntryText = '[' + browserId.substr(0, 5) + '] ' + socketData.cmd;
@@ -326,7 +326,7 @@ module.exports = {
 
         function dumpObjectToDisk(obj, filename) {
             var toString = util.inspect(obj, false, null);
-            fs.writeFile(filename, toString, function (err) {
+            fs.writeFile(filename, toString, (err) => {
                 if (err) {
                     return console.log(err);
                 }
@@ -336,7 +336,7 @@ module.exports = {
 
         function deleteFolderRecursive(path) {
             if (fs.existsSync(path)) {
-                fs.readdirSync(path).forEach(function (file) {
+                fs.readdirSync(path).forEach((file) => {
                     var curPath = path + "/" + file;
                     if (fs.statSync(curPath).isDirectory())
                         deleteFolderRecursive(curPath);
@@ -353,7 +353,7 @@ module.exports = {
                 callback(204);
             } catch (err) {
                 if (tries > 0) {
-                    setTimeout(function () {
+                    setTimeout(() => {
                         console.log('-- retrying')
                         attemptToDeleteFolderRecursive(folder, tries--, callback)
                     }, (100));
