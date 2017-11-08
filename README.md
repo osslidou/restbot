@@ -24,7 +24,10 @@ For instance, run the following 3 HTTP requests to start 3 chrome browsers insta
 `[PUT] http://restbot-vm1/test1`
 
 To list current browser instances, run this HTTP request:  
-`[GET] http://restbot-vm1` -> this returns `['browser1', 'browser2', 'test1']`  
+`[GET] http://restbot-vm1` -> this returns `['browser1', 'browser2', 'test1']` 
+
+To kill all opened browser instances and clear Restbot cache:
+`[DELETE] http://restbot-vm1` 
 
 To stop/kill them, run 3 HTTP requests:  
 `[DELETE] http://restbot-vm1/browser1`  
@@ -193,7 +196,3 @@ This returns an array of page errors.
 Clear page errors
 `[DELETE] http://restbot-vm1/browser1/errors`
 
-### Clearing Restbot Cache
-
-To clear automation-browser cache, run the same command with a `cleanup` parameter:
-> node app.js cleanup

@@ -177,7 +177,7 @@ mod.main = function* () {
 
         for (var i = 0; i < 3; i++) {
             yield api.put(i, '');
-            yield api.del(i, '', { deleteSessionData: false });
+            yield api.del(i, '', { deleteSessionData: true }, { code: [204] });
         }
 
         console.log('_____ views : position-size');
@@ -191,6 +191,12 @@ mod.main = function* () {
             || info.value[0].left !== TARGET_LEFT)
             throw new Error('Failed to set window position and size');
         yield api.del('b1');
+
+        console.log('_____ folder and opened-sessions cleanup');
+        yield api.put('b1', '', null, { code: [200, 409] });
+        yield api.put('b1', '/url', { value: testAppUrl });
+        yield api.del('', '', null, { code: [204] });
+
         console.log("-- SUCCESS\n");
     }
     catch (e) {

@@ -24,14 +24,6 @@ if (os.platform() === 'win32') { // windows
 // starts REST and websocket servers
 var restServer = require('./server-rest.js');
 var socketServer = require('./server-socket.js');
-var args = process.argv;
-args.splice(0, 2); // removes first two params (unused)
-
-if (args[0] === 'cleanup') {
-    console.log('Cleaning up existing browser data...');
-    restServer.deleteFolderRecursive(BROWSER_DATA_FOLDER);
-    return;
-}
 
 restServer.start(APP_PORT, BROWSER_PATH, BROWSER_DATA_FOLDER, serverData, function (server) {
     socketServer.start(server, serverData);

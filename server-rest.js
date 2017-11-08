@@ -10,18 +10,7 @@ var express = require('express');
 var uuid = require('node-uuid');
 var bodyParser = require('body-parser');
 
-var deleteFolderRecursive = function (path) {
-    if (fs.existsSync(path)) {
-        fs.readdirSync(path).forEach(function (file) {
-            var curPath = path + "/" + file;
-            if (fs.statSync(curPath).isDirectory())
-                deleteFolderRecursive(curPath);
-            else
-                fs.unlinkSync(curPath);
-        });
-        fs.rmdirSync(path);
-    }
-}
+const MAX_FOLDER_DELETE_RETRIES = 20;
 
 module.exports = {
     start: function (port, browserPath, browserUserDataFolder, serverData, callback) {
@@ -58,16 +47,30 @@ module.exports = {
                 next();
         });
 
-        app.get('/', function (req, res) {
-            // returns array of active browserIds
+        function getOpenedBrowsersList() {
             var result = [];
             for (let [browserId, socket] of serverData.socketsByBrowser)
                 result.push(browserId);
+            return result;
+        }
 
-            res.send(result);
-
+        app.get('/', function (req, res) {
+            // returns array of active browserIds
+            var allBrowsers = getOpenedBrowsersList();
+            res.send(allBrowsers);
             console.log('[*] list');
         });
+
+        app.delete('/', function (req, res) {
+            // close/delete all opened browser
+            var allBrowsers = getOpenedBrowsersList();
+            for (let browserId of allBrowsers)
+                deleteBrowser(browserId)
+
+            attemptToDeleteFolderRecursive(browserUserDataFolder, MAX_FOLDER_DELETE_RETRIES, (httpCode) => {
+                res.sendStatus(httpCode);
+            });
+        })
 
         app.use('/:id*', function (req, res, next) {
             // browserId middleware: 
@@ -155,37 +158,44 @@ module.exports = {
             logCommand(req.browserId, { cmd: 'start' })
         });
 
-        app.delete('/:id', function (req) {
-            var socketData = req.socketData;
-            var browserId = req.browserId;
-            var requestId = socketData.requestId;
+        function deleteBrowser(browserId, socketData) {
             var browser = serverData.getBrowser(browserId);
-            var res = serverData.getPendingRequest(requestId);
 
-            socketData.cmd = "kill";
-            logCommand(req.browserId, socketData);
+            if (socketData) {
+                var requestId = socketData.requestId;
+                var res = serverData.getPendingRequest(requestId);
+                // delete from the maps first, because we capture un-expected socket disconnect
+                serverData.deletePendingRequest(requestId);
+                socketData.cmd = "kill";
+                logCommand(browserId, socketData);
 
-            // delete from the maps first, because we capture un-expected socket disconnect
-            serverData.deletePendingRequest(requestId);
+                browser.on('close', function (code) {
+                    // wait til process is actually closed to return 200
+                    if (socketData.deleteSessionData) {
+                        var sessionDataPath = path.resolve(browserUserDataFolder, browserId);
+                        console.log('Cleaning up sessionData "' + sessionDataPath + '"');
+                        attemptToDeleteFolderRecursive(sessionDataPath, MAX_FOLDER_DELETE_RETRIES, (httpCode) => {
+                            res.writeHead(httpCode);
+                            res.end();
+                        });
+                    } else {
+                        res.writeHead(200);
+                        res.end();
+                    }
+                });
+            }
+
             serverData.purgeBrowserData(browserId);
-
-            browser.on('close', function (code) {
-                // wait til process is actually closed to return 200
-                res.writeHead(200);
-                res.end();
-
-                if (socketData.deleteSessionData) {
-                    var sessionDataPath = path.resolve(browserUserDataFolder, req.browserId);
-                    console.log('Cleaning up sessionData "' + sessionDataPath + '"');
-                    deleteFolderRecursive(sessionDataPath);
-                }
-            });
 
             //todo: use OS-prefered way to stop the process without force-killing it: issue where chrome does not write session data (browser.kill does not give chrome enough time to stop on windows
             var spawn = childProcess.spawn;
             //var startupArgs = ["/pid", browser.pid, "/f"];
             var startupArgs = ["/pid", browser.pid];
             spawn("taskkill", startupArgs)
+        }
+
+        app.delete('/:id', function (req) {
+            deleteBrowser(req.browserId, req.socketData)
         });
 
         app.use('/:id/url', function (req, res, next) {
@@ -323,7 +333,34 @@ module.exports = {
                 console.log("dumpObjectToDisk to '" + filename + "' completed");
             });
         }
-    },
 
-    deleteFolderRecursive: deleteFolderRecursive
+        function deleteFolderRecursive(path) {
+            if (fs.existsSync(path)) {
+                fs.readdirSync(path).forEach(function (file) {
+                    var curPath = path + "/" + file;
+                    if (fs.statSync(curPath).isDirectory())
+                        deleteFolderRecursive(curPath);
+                    else
+                        fs.unlinkSync(curPath);
+                });
+                fs.rmdirSync(path);
+            }
+        }
+
+        function attemptToDeleteFolderRecursive(folder, tries, callback) {
+            try {
+                deleteFolderRecursive(folder);
+                callback(204);
+            } catch (err) {
+                if (tries > 0) {
+                    setTimeout(function () {
+                        console.log('-- retrying')
+                        attemptToDeleteFolderRecursive(folder, tries--, callback)
+                    }, (100));
+                } else {
+                    callback(500);
+                }
+            }
+        }
+    },
 }
