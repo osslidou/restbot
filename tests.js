@@ -180,7 +180,7 @@ mod.main = function* () {
             yield api.del(i, '', { cleanupSessionData: true }, { code: [204] });
         }
 
-        console.log('_____ views : position-size');
+        console.log('_____ views : position-size-state');
         yield api.put('b1');
         const TARGET_WIDTH = 640, TARGET_HEIGHT = 480, TARGET_TOP = 0, TARGET_LEFT = 1;
         yield api.put('b1', '/views', { width: TARGET_WIDTH, height: TARGET_HEIGHT, top: TARGET_TOP, left: TARGET_LEFT });
@@ -190,6 +190,12 @@ mod.main = function* () {
             || info.value[0].top !== TARGET_TOP
             || info.value[0].left !== TARGET_LEFT)
             throw new Error('Failed to set window position and size');
+
+        yield api.put('b1', '/views', { state: "minimized" });
+        info = yield api.get('b1', '/views');
+        if (info.value[0].state !== "minimized")
+            throw new Error('Failed to set window state');
+
         yield api.del('b1');
 
         console.log('_____ folder and opened-sessions cleanup');

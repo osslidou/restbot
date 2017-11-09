@@ -66,7 +66,8 @@ function runActionInBrowser(socket, data) {
                                 top: window.top,
                                 left: window.left,
                                 width: window.width,
-                                height: window.height
+                                height: window.height,
+                                state: window.state
                             };
                             retval.push(viewInfo);
                         });
@@ -127,6 +128,8 @@ function runActionInBrowser(socket, data) {
                     updateInfo.width = parseInt(data.width)
                 if (data.height)
                     updateInfo.height = parseInt(data.height)
+                if (data.state)
+                    updateInfo.state = data.state
 
                 chrome.windows.update(wind.id, updateInfo, function (window) {
                     socket.emit('cmd_out', data);
