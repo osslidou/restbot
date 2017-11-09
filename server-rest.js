@@ -274,9 +274,8 @@ module.exports = {
 
                 browser.on('close', (code) => {
                     // wait til process is actually closed to return 200
-                    if (socketData.deleteSessionData) {
+                    if (socketData.cleanupSessionData) {
                         var sessionDataPath = path.resolve(browserUserDataFolder, browserId);
-                        console.log('Cleaning up sessionData "' + sessionDataPath + '"');
                         attemptToDeleteFolderRecursive(sessionDataPath, MAX_FOLDER_DELETE_RETRIES, (httpCode) => {
                             res.writeHead(httpCode);
                             res.end();

@@ -177,7 +177,7 @@ mod.main = function* () {
 
         for (var i = 0; i < 3; i++) {
             yield api.put(i, '');
-            yield api.del(i, '', { deleteSessionData: true }, { code: [204] });
+            yield api.del(i, '', { cleanupSessionData: true }, { code: [204] });
         }
 
         console.log('_____ views : position-size');
