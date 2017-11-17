@@ -11,12 +11,13 @@ var uuid = require('node-uuid');
 var bodyParser = require('body-parser');
 
 const MAX_FOLDER_DELETE_RETRIES = 20;
+const REQUEST_TIMEOUT_IN_MS = 1800000; // 30mins
 
 module.exports = {
     start: function (port, browserPath, browserUserDataFolder, serverData, callback) {
         var app = express();
 
-        const REQUEST_TIMEOUT_IN_MS = 600000; // 10mins
+
         const server = app.listen(port, function () {
             console.log("restbot running at http://localhost:" + port + "/\n");
             callback(this);
