@@ -354,9 +354,9 @@ module.exports = {
             } catch (err) {
                 if (tries > 0) {
                     setTimeout(() => {
-                        console.log(`-- retrying ${folder} - tries=${tries} - error: ${err}`)
+                        console.log(`-- retrying to purge '${folder}' - remainting attempts=${tries}`)
                         attemptToDeleteFolderRecursive(folder, --tries, callback);
-                    }, (1000));
+                    }, (500));
                 } else {
                     callback(500);
                 }

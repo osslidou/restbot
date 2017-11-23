@@ -1,5 +1,6 @@
 const APP_PORT = 8081;
-var JQUERY_JS = "jquery-2.1.4.min.js";
+//var JQUERY_JS = "jquery-2.1.4.min.js";
+var JQUERY_JS = "jquery-3.2.1.min.js";
 var PAGE_JS = "page.js";
 var apiUrl = 'http://localhost:' + APP_PORT + '/';
 
@@ -222,6 +223,20 @@ function runActionInActivePage(socket, tab, data) {
                 socket.emit('cmd_out', data);
                 console.log('--' + data.cmd + ' done');
             });
+            break;
+
+        case "network_start":
+            var tabId = tab.id;
+            var version = "1.0";
+            var debuggeeId = { tabId: tabId };
+
+            chrome.debugger.attach(debuggeeId, version, function () {
+                chrome.debugger.sendCommand(debuggeeId, "Network.enable");
+                chrome.debugger.onEvent.addListener(function (debuggeeId, message, params) {
+                    console.log(message, params);
+                });
+            });
+            socket.emit('cmd_out', data);
             break;
 
         case "fullpage_screenshot":
