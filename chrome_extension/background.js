@@ -384,7 +384,10 @@ function parseIncomingNetworkMessage() {
         chrome.debugger.sendCommand(debuggeeId, "Network.enable");
         chrome.debugger.onEvent.addListener(function (debuggeeId, message, params) {
             if (message === 'Network.requestWillBeSent') {
-                pending.set(params.requestId, { startTime: params.timestamp });
+                pending.set(params.requestId, {
+                    startTime: params.timestamp,
+                    method: params.request.method
+                });
 
             } else if (message === 'Network.responseReceived') {
                 var requestData = pending.get(params.requestId);
@@ -419,7 +422,7 @@ function parseIncomingNetworkMessage() {
 
                 networkStats.push(requestData);
                 pending.delete(params.requestId);
-                //console.log(`[${requestData.url}] ${requestData.totalTime}ms ${requestData.status}`);
+                //console.log(`[${requestData.url}] ${requestData.totalTime}ms ${requestData.status}`);                
             }
         });
     });
