@@ -187,6 +187,7 @@ function findActiveTabAndRunAction(socket, data) {
 }
 
 function runActionInActivePage(socket, tab, data) {
+    console.log(`-- runActionInActivePage: ${JSON.stringify(tab)} - ${JSON.stringify(data)}`);
     if (tab === undefined) {
         console.log('--' + data.cmd + ' error');
         data.error_code = 501;
