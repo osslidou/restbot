@@ -5,6 +5,7 @@ var PAGE_JS = "page.js";
 var apiUrl = 'http://localhost:' + APP_PORT + '/';
 
 var pageErrors = [];
+var networkStats = [];
 var activeFrameId = 0;
 var contentScriptCode = '';
 
@@ -61,7 +62,7 @@ function runActionInBrowser(socket, data) {
                                 index: tab.index,
                                 isActive: tab.active,
                                 url: tab.url, title:
-                                tab.title,
+                                    tab.title,
                                 windowId: window.id,
                                 windowType: window.type,
                                 top: window.top,
@@ -225,17 +226,13 @@ function runActionInActivePage(socket, tab, data) {
             });
             break;
 
-        case "network_start":
-            var tabId = tab.id;
-            var version = "1.0";
-            var debuggeeId = { tabId: tabId };
+        case "enable_network_stats":
+            parseIncomingNetworkMessage();
+            socket.emit('cmd_out', data);
+            break;
 
-            chrome.debugger.attach(debuggeeId, version, function () {
-                chrome.debugger.sendCommand(debuggeeId, "Network.enable");
-                chrome.debugger.onEvent.addListener(function (debuggeeId, message, params) {
-                    console.log(message, params);
-                });
-            });
+        case "get_network_stats":
+            data.retVal = networkStats;
             socket.emit('cmd_out', data);
             break;
 
@@ -371,4 +368,58 @@ function setExtensionIcon(isPauseIcon) {
         iconPath = 'play4.png';
 
     chrome.browserAction.setIcon({ path: iconPath });
+}
+
+function parseIncomingNetworkMessage() {
+    let pending = new Map(); // map[requestId, {requestData}]
+
+    var tabId = tab.id;
+    var version = "1.0";
+    var debuggeeId = { tabId: tabId };
+
+    let round2 = (nb) => Math.round(nb * 1e2) / 1e2;
+
+    chrome.debugger.attach(debuggeeId, version, function () {
+        chrome.debugger.sendCommand(debuggeeId, "Network.enable");
+        chrome.debugger.onEvent.addListener(function (debuggeeId, message, params) {
+            if (message === 'Network.requestWillBeSent') {
+                pending.set(params.requestId, { startTime: params.timestamp });
+
+            } else if (message === 'Network.responseReceived') {
+                var requestData = pending.get(params.requestId);
+                if (requestData === undefined) /* case we receive events that started before the capturing started */
+                    return;
+
+                requestData.url = params.response.url;
+                var chromeTiming = params.response.timing;
+                var timing = {};
+                if (chromeTiming) {
+                    timing.dns = round2(chromeTiming.dnsEnd - chromeTiming.dnsStart);
+                    timing.initialConnection = round2(chromeTiming.connectEnd - chromeTiming.connectStart);
+                    timing.ssl = round2(chromeTiming.sslEnd - chromeTiming.sslStart);
+                    timing.requestSent = round2(chromeTiming.sendEnd - chromeTiming.sendStart);
+                }
+
+                requestData.type = params.response.mimeType;
+                requestData.status = params.response.status;
+                requestData.timing = timing;
+                if (params.response.status !== 200)
+                    requestData.statusText = params.response.statusText;
+
+            } else if (message === 'Network.loadingFinished') {
+                var requestData = pending.get(params.requestId);
+                if (requestData === undefined) /* case we receive events that started before the capturing started */
+                    return;
+
+                requestData.length = params.encodedDataLength;
+                requestData.totalTime = round2(1000 * (params.timestamp - requestData.startTime));
+
+                delete requestData.startTime;
+
+                networkStats.push(requestData);
+                pending.delete(params.requestId);
+                //console.log(`[${requestData.url}] ${requestData.totalTime}ms ${requestData.status}`);
+            }
+        });
+    });
 }
