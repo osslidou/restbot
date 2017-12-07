@@ -187,7 +187,6 @@ function findActiveTabAndRunAction(socket, data) {
 }
 
 function runActionInActivePage(socket, tab, data) {
-    console.log(`-- runActionInActivePage: ${JSON.stringify(tab)} - ${JSON.stringify(data)}`);
     if (tab === undefined) {
         console.log('--' + data.cmd + ' error');
         data.error_code = 501;
@@ -337,17 +336,23 @@ function sendMessageIntoTab(tabId, data, callback) {
     var details = { tabId: tabId, frameId: data.frameId };
     var dependency_key = `${tabId}-${data.frameId}`;
 
+    console.log(`-- sendMessageIntoTab - ${tabId} - ${JSON.stringify(data)}`);
     chrome.webNavigation.getFrame(details, function (info) {
+        console.log(`-- getFrame - ${JSON.stringify(info)}`);
         chrome.tabs.sendMessage(
             tabId,
             { data: data },
             { frameId: data.frameId },
             function (response) {
-                if (response)
+                if (response) {
+                    console.log(`-- chrome.tabs.sendMessage-RESPONSE - ${JSON.stringify(response)}`);
                     callback(response);
+                }
 
                 else {
+                    console.log(`-- chrome.tabs.sendMessage-ELSE-1`);
                     chrome.tabs.executeScript(tabId, { code: contentScriptCode, allFrames: true, frameId: data.frameId }, function (resp) {
+                        console.log(`-- chrome.tabs.sendMessage-ELSE-2`);
                         callback(); // after dependencies are injected, this will invoke callback() with no params, which triggers a retry
                     }
                     );
