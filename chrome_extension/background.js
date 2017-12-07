@@ -238,11 +238,10 @@ function runActionInActivePage(socket, tab, data) {
 
         case "fullpage_screenshot":
             var tabId = tab.id;
-            var version = "1.0";
             var debuggeeId = { tabId: tabId };
             let clip = {};
 
-            chrome.debugger.attach(debuggeeId, version, function () {
+            attachOrReuseDebugger(debuggeeId, function () {
                 chrome.debugger.sendCommand(debuggeeId, "Page.getLayoutMetrics", function (metrics) {
                     const width = Math.ceil(metrics.contentSize.width);
                     const height = Math.ceil(metrics.contentSize.height);
@@ -348,7 +347,6 @@ function sendMessageIntoTab(tabId, data, callback) {
                     console.log(`-- chrome.tabs.sendMessage-RESPONSE - ${JSON.stringify(response)}`);
                     callback(response);
                 }
-
                 else {
                     console.log(`-- chrome.tabs.sendMessage-ELSE-1`);
                     chrome.tabs.executeScript(tabId, { code: contentScriptCode, allFrames: true, frameId: data.frameId }, function (resp) {
@@ -376,16 +374,28 @@ function setExtensionIcon(isPauseIcon) {
     chrome.browserAction.setIcon({ path: iconPath });
 }
 
+function attachOrReuseDebugger(debuggeeId, callback) {
+    var version = "1.0";
+
+    chrome.debugger.getTargets(function (targets) {
+        const alreadyAttached = targets.filter(({ attached, tabId }) => attached && tabId === debuggeeId.tabId).length > 0;
+        if (alreadyAttached)
+            callback();
+
+        else
+            chrome.debugger.attach(debuggeeId, version, callback);
+    });
+}
+
 function parseIncomingNetworkMessage() {
     let pending = new Map(); // map[requestId, {requestData}]
 
     var tabId = tab.id;
-    var version = "1.0";
     var debuggeeId = { tabId: tabId };
 
     let round2 = (nb) => Math.round(nb * 1e2) / 1e2;
 
-    chrome.debugger.attach(debuggeeId, version, function () {
+    attachOrReuseDebugger(debuggeeId, function () {
         chrome.debugger.sendCommand(debuggeeId, "Network.enable");
         chrome.debugger.onEvent.addListener(function (debuggeeId, message, params) {
             if (message === 'Network.requestWillBeSent') {
@@ -399,7 +409,13 @@ function parseIncomingNetworkMessage() {
                 if (requestData === undefined) /* case we receive events that started before the capturing started */
                     return;
 
-                requestData.url = params.response.url;
+                if (params.response.protocol === "data")
+                    // when protocol== data, the url is the data itself (this polutes the logs)
+                    requestData.url = "data:[...]"
+
+                else
+                    requestData.url = params.response.url;
+
                 var chromeTiming = params.response.timing;
                 var timing = {};
                 if (chromeTiming) {
