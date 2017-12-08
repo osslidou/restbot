@@ -350,7 +350,12 @@ function sendMessageIntoTab(tabId, data, callback) {
                 }
                 else {
                     console.log(`-- chrome.tabs.sendMessage-ELSE-1`);
-                    chrome.tabs.executeScript(tabId, { code: contentScriptCode, allFrames: true, frameId: data.frameId }, function (resp) {
+                    chrome.tabs.executeScript(tabId, {
+                        code: contentScriptCode,
+                        allFrames: true,
+                        frameId: data.frameId,
+                        runAt: 'document_start'
+                    }, function (resp) {
                         console.log(`-- chrome.tabs.sendMessage-ELSE-2`);
                         callback(); // after dependencies are injected, this will invoke callback() with no params, which triggers a retry
                     }
