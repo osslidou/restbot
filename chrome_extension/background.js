@@ -239,13 +239,14 @@ function runActionInActivePage(socket, tab, data) {
         case "fullpage_screenshot":
             var tabId = tab.id;
             var debuggeeId = { tabId: tabId };
-            let clip = {};
 
             attachOrReuseDebugger(debuggeeId, function () {
                 chrome.debugger.sendCommand(debuggeeId, "Page.getLayoutMetrics", function (metrics) {
-                    const width = Math.ceil(metrics.contentSize.width);
-                    const height = Math.ceil(metrics.contentSize.height);
-                    clip = { x: 0, y: 0, width, height, scale: 1 };
+                    const widthIncreaseFactor = data.widthIncreaseFactor || 1;
+                    const heightIncreaseFactor = data.heightIncreaseFactor || 1;
+                    const width = widthIncreaseFactor * Math.ceil(metrics.contentSize.width);
+                    const height = heightIncreaseFactor * Math.ceil(metrics.contentSize.height);
+
                     chrome.debugger.sendCommand(debuggeeId, "Emulation.setDeviceMetricsOverride", {
                         width: width,
                         height: height,
