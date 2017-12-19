@@ -4,6 +4,41 @@
 <head>
     <title>test page</title>
 </head>
+<script>
+    function ajaxRequest() {
+        var activexmodes = ["Msxml2.XMLHTTP", "Microsoft.XMLHTTP"]; //activeX versions to check for in IE
+        if (window.ActiveXObject) { //Test for support for ActiveXObject in IE first (as XMLHttpRequest in IE7 is broken)
+            for (var i = 0; i < activexmodes.length; i++) {
+                try {
+                    return new ActiveXObject(activexmodes[i]);
+                }
+                catch (e) {
+                    //suppress error
+                }
+            }
+        }
+        else if (window.XMLHttpRequest) // if Mozilla, Safari etc
+            return new XMLHttpRequest();
+        else
+            return false;
+    }
+
+    function ajaxget(delayInMs) {
+        var mygetrequest = new ajaxRequest();
+        mygetrequest.onreadystatechange = function () {
+            if (mygetrequest.readyState == 4) {
+                if (mygetrequest.status == 200 || window.location.href.indexOf("http") == -1) {
+                    document.getElementById("result").innerHTML = mygetrequest.responseText;
+                }
+                else {
+                    alert("An error has occured making the request");
+                }
+            }
+        }
+        mygetrequest.open("GET", `long/${delayInMs}`, true);
+        mygetrequest.send(null);
+    }
+</script>
 
 <body>
     <h1 id='firstTitle'>Title1</h1>
@@ -38,6 +73,7 @@
             <input id="openTab" type="button" value="openTab" onclick="var win = window.open('http://localhost:8082/tests.html', '_blank');">
             <input id="openPopup" type="button" value="openPopup" onclick="var win = window.open('http://localhost:8082/tests.popup.html', 'newwindow', 'width=300, height=250');">
             <input id="openConfirm" type="button" value="openConfirm" onclick="if(confirm('are you sure?')) document.getElementById('openConfirm').value= 'confirm_yes'">
+            <input id="openLongRunningHttpRequest" type="button" value="openLongRunningHttpRequest" onclick="ajaxget(10000)">
         </div>
 
     </div>

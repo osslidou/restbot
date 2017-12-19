@@ -5,7 +5,7 @@ var PAGE_JS = "page.js";
 var apiUrl = 'http://localhost:' + APP_PORT + '/';
 
 var pageErrors = [];
-var networkStats = [];
+let networkRequests = new Map(); // map[requestId, {requestData}]
 var activeFrameId = 0;
 var contentScriptCode = '';
 
@@ -232,7 +232,18 @@ function runActionInActivePage(socket, tab, data) {
             break;
 
         case "get_network_stats":
-            data.retVal = networkStats;
+            const neworkStatsArray = Array.from(networkRequests.values());
+            const sortedNetworkStats = neworkStatsArray.sort(function (a, b) {
+                if (a.startTime > b.startTime) {
+                    return 1;
+                }
+                if (a.startTime < b.startTime) {
+                    return -1;
+                }
+                return 0;
+            });
+
+            data.retVal = sortedNetworkStats;
             socket.emit('cmd_out', data);
             break;
 
@@ -394,8 +405,6 @@ function attachOrReuseDebugger(debuggeeId, callback) {
 }
 
 function parseIncomingNetworkMessage() {
-    let pending = new Map(); // map[requestId, {requestData}]
-
     var tabId = tab.id;
     var debuggeeId = { tabId: tabId };
 
@@ -405,13 +414,15 @@ function parseIncomingNetworkMessage() {
         chrome.debugger.sendCommand(debuggeeId, "Network.enable");
         chrome.debugger.onEvent.addListener(function (debuggeeId, message, params) {
             if (message === 'Network.requestWillBeSent') {
-                pending.set(params.requestId, {
+                networkRequests.set(params.requestId, {
                     startTime: params.timestamp,
-                    method: params.request.method
+                    method: params.request.method,
+                    url: params.request.url,
+                    status: 0 // can be used to identify pending requests
                 });
 
             } else if (message === 'Network.responseReceived') {
-                var requestData = pending.get(params.requestId);
+                var requestData = networkRequests.get(params.requestId);
                 if (requestData === undefined) /* case we receive events that started before the capturing started */
                     return;
 
@@ -438,18 +449,12 @@ function parseIncomingNetworkMessage() {
                     requestData.statusText = params.response.statusText;
 
             } else if (message === 'Network.loadingFinished') {
-                var requestData = pending.get(params.requestId);
+                var requestData = networkRequests.get(params.requestId);
                 if (requestData === undefined) /* case we receive events that started before the capturing started */
                     return;
 
                 requestData.length = params.encodedDataLength;
                 requestData.totalTime = round2(1000 * (params.timestamp - requestData.startTime));
-
-                delete requestData.startTime;
-
-                networkStats.push(requestData);
-                pending.delete(params.requestId);
-                //console.log(`[${requestData.url}] ${requestData.totalTime}ms ${requestData.status}`);                
             }
         });
     });
