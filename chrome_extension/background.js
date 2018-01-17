@@ -231,20 +231,20 @@ function runActionInActivePage(socket, tab, data) {
             socket.emit('cmd_out', data);
             break;
 
-        case "get_network_stats_latest_chrome_timestamp":
+        case "get_network_stats_latest_timestamp":
         case "get_network_stats":
             let networkStatsArray = Array.from(networkRequests.values());
             switch (data.cmd) {
-                case "get_network_stats_latest_chrome_timestamp":
-                    const latestChromeTimeStamp = networkStatsArray.reduce((last, current) => current.startTime > last ? current.startTime : last, 0);
-                    data.retVal = latestChromeTimeStamp;
+                case "get_network_stats_latest_timestamp":
+                    const latestTimeStamp = networkStatsArray.reduce((last, current) => current.startTime > last ? current.startTime : last, 0);
+                    data.retVal = latestTimeStamp;
                     break;
 
                 case "get_network_stats":
                     if (data.path) {
                         // lowerbound value specified in the path, for instance: http://restbot/955664.555762?get_network_stats instead of http://restbot/?get_network_stats
-                        const lowerBoundChromeTimeStamp = parseFloat(data.path);
-                        networkStatsArray = networkStatsArray.filter(current => current.startTime > lowerBoundChromeTimeStamp);
+                        const lowerBoundTimeStamp = parseFloat(data.path);
+                        networkStatsArray = networkStatsArray.filter(current => current.startTime > lowerBoundTimeStamp);
                     }
 
                     const sortedNetworkStats = networkStatsArray.sort((a, b) => {
