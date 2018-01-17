@@ -231,19 +231,35 @@ function runActionInActivePage(socket, tab, data) {
             socket.emit('cmd_out', data);
             break;
 
+        case "get_network_stats_latest_timestamp":
         case "get_network_stats":
-            const neworkStatsArray = Array.from(networkRequests.values());
-            const sortedNetworkStats = neworkStatsArray.sort(function (a, b) {
-                if (a.startTime > b.startTime) {
-                    return 1;
-                }
-                if (a.startTime < b.startTime) {
-                    return -1;
-                }
-                return 0;
-            });
+            let networkStatsArray = Array.from(networkRequests.values());
+            switch (data.cmd) {
+                case "get_network_stats_latest_timestamp":
+                    const latestTimeStamp = networkStatsArray.reduce((last, current) => current.startTime > last ? current.startTime : last, 0);
+                    data.retVal = latestTimeStamp;
+                    break;
 
-            data.retVal = sortedNetworkStats;
+                case "get_network_stats":
+                    if (data.path) {
+                        // lowerbound value specified in the path, for instance: http://restbot/955664.555762?get_network_stats instead of http://restbot/?get_network_stats
+                        const lowerBound = parseFloat(data.path);
+                        networkStatsArray = networkStatsArray.filter(current => current.startTime > lowerBound);
+                    }
+
+                    const sortedNetworkStats = networkStatsArray.sort((a, b) => {
+                        if (a.startTime > b.startTime) {
+                            return 1;
+                        }
+                        if (a.startTime < b.startTime) {
+                            return -1;
+                        }
+                        return 0;
+                    });
+                    data.retVal = sortedNetworkStats;
+                    break;
+            }
+
             socket.emit('cmd_out', data);
             break;
 
