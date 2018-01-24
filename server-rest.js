@@ -146,6 +146,10 @@ module.exports = {
                 startupArgs.push("--auto-open-devtools-for-tabs");
             }
 
+            if (req.socketData.lang) {
+                startupArgs.push(`--lang=${req.socketData.lang}`);
+            }
+
             var browser = spawn(browserPath, startupArgs);
             serverData.setBrowser(req.browserId, browser);
 
