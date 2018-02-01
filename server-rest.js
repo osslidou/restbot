@@ -297,8 +297,8 @@ module.exports = {
 
             //todo: use OS-prefered way to stop the process without force-killing it: issue where chrome does not write session data (browser.kill does not give chrome enough time to stop on windows
             var spawn = childProcess.spawn;
-            //var startupArgs = ["/pid", browser.pid, "/f"];
-            var startupArgs = ["/pid", browser.pid];
+            var startupArgs = ["/pid", browser.pid, "/f"];
+            //var startupArgs = ["/pid", browser.pid];
             spawn("taskkill", startupArgs)
         }
 
