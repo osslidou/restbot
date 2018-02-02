@@ -19,8 +19,7 @@ if (action == Enums.APP_ACTION.install) {
 }
 
 if (os.platform() === 'win32') { // windows
-    BROWSER_PATH = "c:\\PROGRA~2\\Google\Chrome\\Application\\chrome.exe";
-    //BROWSER_DATA_FOLDER = process.env.TEMP + "\\google_data\\restbot";
+    BROWSER_PATH = "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe";
     BROWSER_DATA_FOLDER = "c:\\temp\\restbot_cache";
     BROWSER_PATH = "c:\\temp\\Application\\chrome.exe"
     // permissions: if you get a crashed chrome, run nodejs not-as-admin and chrome in another folder
