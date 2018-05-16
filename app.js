@@ -1,13 +1,13 @@
 ﻿var serverData = require('./server-data.js');
 var os = require("os");
+var fs = require('fs');
+
 const Enums = require('./enums');
 
 const WINDOWS_SERVICE_NAME = 'Restbot'
 const WINDOWS_SERVICE_DESCRIPTION = 'Resbot node.js service'
 const APP_PORT = 8081;
 const STATIC_PORT = 8082;
-
-var BROWSER_PATH, BROWSER_DATA_FOLDER;
 
 const [action, currentFilename] = getOpeningArgsAction(process.argv);
 if (action == Enums.APP_ACTION.install) {
@@ -18,16 +18,12 @@ if (action == Enums.APP_ACTION.install) {
     return;
 }
 
-if (os.platform() === 'win32') { // windows
-    BROWSER_PATH = "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe";
-    BROWSER_DATA_FOLDER = "c:\\temp\\restbot_cache";
-    BROWSER_PATH = "c:\\temp\\Application\\chrome.exe"
-    // permissions: if you get a crashed chrome, run nodejs not-as-admin and chrome in another folder
-    //BROWSER_PATH = "C:\\Users\\vilidou\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe";
+var BROWSER_PATH = "chrome-win32\\chrome.exe";
+var BROWSER_DATA_FOLDER = "c:\\temp\\restbot_cache"; //  process.env.TMPDIR + "/google_data/restbot";
 
-} else if (os.platform() === 'darwin') { // mac
-    BROWSER_PATH = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-    BROWSER_DATA_FOLDER = process.env.TMPDIR + "/google_data/restbot";
+if (os.platform() === 'win32') {
+    // windows
+    downloadAndUnzipChrominiumIfNeededSync(BROWSER_PATH);
 } else
     throw new Error('OS not supported - platform = ' + os.platform());
 
@@ -72,4 +68,34 @@ function installOrRemoveWindowsService(isInstall) {
         console.log('removing windows service...');
         nodeService.uninstall();
     }
+}
+
+function downloadAndUnzipChrominiumIfNeededSync(chrominiumPath) {
+    if (fs.existsSync(BROWSER_PATH))
+        return;
+
+    var admZip = require('adm-zip');
+    var uuid = require('node-uuid');
+
+    // http://commondatastorage.googleapis.com/chromium-browser-snapshots/index.html?path=Win/
+    var archive = new admZip('chrome.win32.zip');
+    var path = require('path');
+    var tmpPath = path.join(os.tmpdir(), uuid.v1());
+    console.log('extracting to:' + tmpPath);
+    archive.extractAllTo(tmpPath);
+
+    const fse = require('fs-extra')
+
+    fse.moveSync(path.join(tmpPath, 'chrome-win32'), 'chrome-win32', { overwrite: true });
+
+    /*
+    var request = require('request'),
+        zlib = require('zlib'),
+        fs = require('fs'),
+        out = fs.createWriteStream('out');
+
+    var chrominiumUrl = 'https://www.googleapis.com/download/storage/v1/b/chromium-browser-snapshots/o/Win_x64%2F558500%2Fchrome-win32.zip?generation=1526340286819675&alt=media';
+
+    request(chrominiumUrl).pipe(zlib.createGunzip()).pipe(out);
+    */
 }

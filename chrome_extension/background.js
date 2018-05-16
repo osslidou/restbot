@@ -263,6 +263,18 @@ function runActionInActivePage(socket, tab, data) {
             socket.emit('cmd_out', data);
             break;
 
+        case "send_key":
+            var tabId = tab.id;
+            var debuggeeId = { tabId: tabId };
+            attachOrReuseDebugger(debuggeeId, function () {
+                chrome.debugger.sendCommand(debuggeeId, "Input.dispatchKeyEvent", { type: "char", text: "me" },
+                    function (result) {
+                        data.retVal = result;
+                        socket.emit('cmd_out', data);
+                    });
+            });
+            break;
+
         case "fullpage_screenshot":
             var tabId = tab.id;
             var debuggeeId = { tabId: tabId };

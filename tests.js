@@ -3,6 +3,17 @@ var util = require('util');
 
 var mod = {};
 
+mod.other = function* () {
+    yield api.put('b1', '', null, { code: [200, 409] });
+    var testAppUrl = 'http://localhost:8082/tests.html';
+    yield api.put('b1', '/url', { value: testAppUrl });
+
+    yield api.put('b1', '/doc/id=inputs/input/eq(1)?focus');
+    yield api.put('b1', '/doc/id=inputs/input/eq(1)?send_key');
+
+    //yield api.put('b1', '/doc/id=inputs/.buttons/input/eq(0)?click');        
+}
+
 mod.main = function* () {
     try {
         var result;
