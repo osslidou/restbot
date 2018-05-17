@@ -267,7 +267,10 @@ function runActionInActivePage(socket, tab, data) {
             var tabId = tab.id;
             var debuggeeId = { tabId: tabId };
             attachOrReuseDebugger(debuggeeId, function () {
-                chrome.debugger.sendCommand(debuggeeId, "Input.dispatchKeyEvent", { type: "char", text: "me" },
+                const keyEventType = data.keyEventType || 'rawKeyDown'; // rawKeyDown, char
+                const keyEventText = data.keyEventText;
+
+                chrome.debugger.sendCommand(debuggeeId, "Input.dispatchKeyEvent", { type: keyEventType, text: keyEventText },
                     function (result) {
                         data.retVal = result;
                         socket.emit('cmd_out', data);

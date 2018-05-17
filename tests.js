@@ -9,8 +9,8 @@ mod.other = function* () {
     yield api.put('b1', '/url', { value: testAppUrl });
 
     yield api.put('b1', '/doc/id=inputs/input/eq(1)?focus');
-    yield api.put('b1', '/doc/id=inputs/input/eq(1)?send_key');
-
+    yield api.put('b1', '/doc/id=inputs/input/eq(1)?send_key', { keyEventType: 'char', keyEventText: 'txt' });
+    // type: 'rawKeyDown', keyIdentifier: 'Enter'
     //yield api.put('b1', '/doc/id=inputs/.buttons/input/eq(0)?click');        
 }
 

@@ -71,22 +71,49 @@ function installOrRemoveWindowsService(isInstall) {
 }
 
 function downloadAndUnzipChrominiumIfNeededSync(chrominiumPath) {
+    var fs = require('fs');
+
     if (fs.existsSync(BROWSER_PATH))
         return;
 
-    var admZip = require('adm-zip');
-    var uuid = require('node-uuid');
+    const chrominiumPath = 'https://www.googleapis.com/download/storage/v1/b/chromium-browser-snapshots/o/Win_x64%2F558500%2Fchrome-win32.zip?generation=1526340286819675&alt=media';
 
+    var http = require('http'),
+        fse = require('fs-extra'),
+        request = require('request'),
+        AdmZip = require('adm-zip'),
+        uuid = require('node-uuid'),
+        out = fs.createWriteStream('chrome.win32.zip');
+
+    var req = request(
+        {
+            method: 'GET',
+            uri: chrominiumPath
+        }
+    );
+
+    req.pipe(out);
+    req.on('end', function () {
+        var archive = new AdmZip("chrome.win32.zip");
+        var path = require('path');
+        var tmpPath = path.join(os.tmpdir(), uuid.v1());
+        console.log('extracting to:' + tmpPath);
+        archive.extractAllTo(tmpPath);
+
+        console.log('moving file...');
+        fse.moveSync(path.join(tmpPath, 'chrome-win32'), 'chrome-win32', { overwrite: true });
+    });
+
+
+    /*
     // http://commondatastorage.googleapis.com/chromium-browser-snapshots/index.html?path=Win/
     var archive = new admZip('chrome.win32.zip');
     var path = require('path');
     var tmpPath = path.join(os.tmpdir(), uuid.v1());
     console.log('extracting to:' + tmpPath);
     archive.extractAllTo(tmpPath);
+*/
 
-    const fse = require('fs-extra')
-
-    fse.moveSync(path.join(tmpPath, 'chrome-win32'), 'chrome-win32', { overwrite: true });
 
     /*
     var request = require('request'),
