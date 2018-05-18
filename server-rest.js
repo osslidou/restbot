@@ -11,6 +11,7 @@ var express = require('express');
 var uuid = require('node-uuid');
 var bodyParser = require('body-parser');
 
+const CHROMINIUM_VERSION = 558500;
 const MAX_FOLDER_DELETE_RETRIES = 20;
 const REQUEST_TIMEOUT_IN_MS = 1800000; // 30mins
 
@@ -376,50 +377,77 @@ module.exports = {
                 throw new Error('OS not supported - platform = ' + os.platform());
             }
 
-            var browserPath = 'chrome-win32\\chrome.exe';
-            var browserUserDataFolder = 'c:\\temp\\restbot_cache'; //  process.env.TMPDIR + "/google_data/restbot";
+            var chrominiumFolder = `chrominium.v${CHROMINIUM_VERSION}`;
+            var browserFullPath = `${chrominiumFolder}\\chrome.exe`;
+            var browserUserDataFolder = path.join(os.tmpdir(), 'restbot_cache'); // mac: process.env.TMPDIR + "/google_data/restbot";
 
-            if (fs.existsSync(browserPath)) {
-                return;
+            const downloadAndUnzip = function () {
+                return new Promise(function (resolve) {
+                    const chrominiumPath = `https://www.googleapis.com/download/storage/v1/b/chromium-browser-snapshots/o/Win_x64%2F${CHROMINIUM_VERSION}%2Fchrome-win32.zip?generation=1526340286819675&alt=media`;
+                    //const chrominiumPath = 'http://localhost:8082/chrome.win32.zip';
+                    const downloadFilePath = 'chrome.win32.tmp.zip';
+
+                    var http = require('http'),
+                        fse = require('fs-extra'),
+                        request = require('request'),
+                        AdmZip = require('adm-zip'),
+                        uuid = require('node-uuid'),
+                        out = fs.createWriteStream(downloadFilePath, { autoClose: false });
+
+                    console.log(`-- downloading chrominium v${CHROMINIUM_VERSION}...`);
+                    var req = request({ method: 'GET', uri: chrominiumPath });
+                    req.pipe(out);
+                    req.on('end', function () {
+                        fs.close(out.fd, async function () {
+                            await checkExistsWithTimeout('chrome.win32.zip', 2000);
+                            var archive = new AdmZip("chrome.win32.zip");
+                            var path = require('path');
+                            var tmpPath = path.join(os.tmpdir(), uuid.v1());
+                            console.log(`-- extracting to: ${tmpPath}`);
+                            archive.extractAllTo(tmpPath);
+                            console.log('-- moving/cleaning up...');
+                            fse.moveSync(path.join(tmpPath, 'chrome-win32'), chrominiumFolder, { overwrite: true });
+                            fs.unlinkSync(downloadFilePath);
+                            console.log('-- done!');
+                            resolve();
+                        });
+                    });
+                });
             }
 
-            const downloadAndUnzip = new Promise(function (resolve) {
-                //const chrominiumPath = 'https://www.googleapis.com/download/storage/v1/b/chromium-browser-snapshots/o/Win_x64%2F558500%2Fchrome-win32.zip?generation=1526340286819675&alt=media';
-                const chrominiumPath = 'http://localhost:8082/chrome.win32.zip';
+            if (!fs.existsSync(browserFullPath)) {
+                await downloadAndUnzip();
+            }
 
-                console.log('in');
+            return { browserFullPath, browserUserDataFolder }
+        }
 
-                var http = require('http'),
-                    fse = require('fs-extra'),
-                    request = require('request'),
-                    AdmZip = require('adm-zip'),
-                    uuid = require('node-uuid'),
-                    out = fs.createWriteStream('chrome.win32.tmp.zip');
+        function checkExistsWithTimeout(path, timeout) {
+            return new Promise((resolve, reject) => {
+                const timeoutTimerId = setTimeout(handleTimeout, timeout)
+                const interval = timeout / 6
+                let intervalTimerId
 
-                var req = request(
-                    {
-                        method: 'GET',
-                        uri: chrominiumPath
-                    }
-                );
+                function handleTimeout() {
+                    clearTimeout(timerId)
+                    const error = new Error('path check timed out')
+                    error.name = 'PATH_CHECK_TIMED_OUT'
+                    reject(error)
+                }
 
-                req.pipe(out);
-                req.on('end', function () {
-                    var archive = new AdmZip("chrome.win32.zip");
-                    var path = require('path');
-                    var tmpPath = path.join(os.tmpdir(), uuid.v1());
-                    console.log('extracting to:' + tmpPath);
-                    archive.extractAllTo(tmpPath);
+                function handleInterval() {
+                    fs.access(path, (err) => {
+                        if (err) {
+                            intervalTimerId = setTimeout(handleInterval, interval)
+                        } else {
+                            clearTimeout(timeoutTimerId)
+                            resolve(path)
+                        }
+                    })
+                }
 
-                    console.log('moving file...');
-                    fse.moveSync(path.join(tmpPath, 'chrome-win32'), 'chrome-win32', { overwrite: true });
-                    resolve();
-                });
-            });
-
-            await downloadAndUnzip;
-
-            return { browserPath, browserUserDataFolder }
+                intervalTimerId = setTimeout(handleInterval, interval)
+            })
         }
     }
 }
