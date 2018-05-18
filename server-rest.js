@@ -4,6 +4,7 @@ var util = require('util');
 var path = require('path');
 var url = require("url");
 var childProcess = require('child_process');
+var os = require("os");
 
 // requires npm install
 var express = require('express');
@@ -14,9 +15,11 @@ const MAX_FOLDER_DELETE_RETRIES = 20;
 const REQUEST_TIMEOUT_IN_MS = 1800000; // 30mins
 
 module.exports = {
-    start: function (port, browserPath, browserUserDataFolder, serverData, callback) {
-        var app = express();
+    start: async function (port, serverData, callback) {
 
+        var { browserPath, browserUserDataFolder } = await downloadAndUnzipChrominiumIfNeededSync();
+
+        var app = express();
 
         const server = app.listen(port, function () {
             console.log("restbot running at http://localhost:" + port + "/\n");
@@ -367,5 +370,56 @@ module.exports = {
                 }
             }
         }
-    },
+
+        async function downloadAndUnzipChrominiumIfNeededSync() {
+            if (os.platform() !== 'win32') {
+                throw new Error('OS not supported - platform = ' + os.platform());
+            }
+
+            var browserPath = 'chrome-win32\\chrome.exe';
+            var browserUserDataFolder = 'c:\\temp\\restbot_cache'; //  process.env.TMPDIR + "/google_data/restbot";
+
+            if (fs.existsSync(browserPath)) {
+                return;
+            }
+
+            const downloadAndUnzip = new Promise(function (resolve) {
+                //const chrominiumPath = 'https://www.googleapis.com/download/storage/v1/b/chromium-browser-snapshots/o/Win_x64%2F558500%2Fchrome-win32.zip?generation=1526340286819675&alt=media';
+                const chrominiumPath = 'http://localhost:8082/chrome.win32.zip';
+
+                console.log('in');
+
+                var http = require('http'),
+                    fse = require('fs-extra'),
+                    request = require('request'),
+                    AdmZip = require('adm-zip'),
+                    uuid = require('node-uuid'),
+                    out = fs.createWriteStream('chrome.win32.tmp.zip');
+
+                var req = request(
+                    {
+                        method: 'GET',
+                        uri: chrominiumPath
+                    }
+                );
+
+                req.pipe(out);
+                req.on('end', function () {
+                    var archive = new AdmZip("chrome.win32.zip");
+                    var path = require('path');
+                    var tmpPath = path.join(os.tmpdir(), uuid.v1());
+                    console.log('extracting to:' + tmpPath);
+                    archive.extractAllTo(tmpPath);
+
+                    console.log('moving file...');
+                    fse.moveSync(path.join(tmpPath, 'chrome-win32'), 'chrome-win32', { overwrite: true });
+                    resolve();
+                });
+            });
+
+            await downloadAndUnzip;
+
+            return { browserPath, browserUserDataFolder }
+        }
+    }
 }
