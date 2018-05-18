@@ -385,7 +385,7 @@ module.exports = {
                 return new Promise(function (resolve) {
                     const chrominiumPath = `https://www.googleapis.com/download/storage/v1/b/chromium-browser-snapshots/o/Win_x64%2F${CHROMINIUM_VERSION}%2Fchrome-win32.zip?generation=1526340286819675&alt=media`;
                     //const chrominiumPath = 'http://localhost:8082/chrome.win32.zip';
-                    const downloadFilePath = 'chrome.win32.tmp.zip';
+                    const downloadFilePath = 'tmp_chrome.win32.zip';
 
                     var http = require('http'),
                         fse = require('fs-extra'),
