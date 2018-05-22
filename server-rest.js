@@ -18,7 +18,7 @@ const REQUEST_TIMEOUT_IN_MS = 1800000; // 30mins
 module.exports = {
     start: async function (port, serverData, callback) {
 
-        var { browserPath, browserUserDataFolder } = await downloadAndUnzipChrominiumIfNeededSync();
+        var { browserFullPath, browserUserDataFolder } = await downloadAndUnzipChrominiumIfNeededSync();
 
         var app = express();
 
@@ -155,7 +155,7 @@ module.exports = {
                 startupArgs.push(`--lang=${req.socketData.lang}`);
             }
 
-            var browser = spawn(browserPath, startupArgs);
+            var browser = spawn(browserFullPath, startupArgs);
             serverData.setBrowser(req.browserId, browser);
 
             logCommand(req.browserId, { cmd: 'start' })
