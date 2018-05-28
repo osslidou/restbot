@@ -23,7 +23,7 @@ module.exports = {
         var app = express();
 
         const server = app.listen(port, function () {
-            console.log("restbot running at http://localhost:" + port + "/\n");
+            console.log(`Restbot: http://localhost:${port}\nCache: ${browserUserDataFolder}\n`);
             callback(this);
         });
         server.timeout = REQUEST_TIMEOUT_IN_MS;
@@ -144,7 +144,7 @@ module.exports = {
             var spawn = childProcess.spawn;
             var startupArgs = ["--no-default-browser-check", "--no-first-run", "--test-type", "--ignore-certificate-errors",
                 "--user-agent=\"Mozilla/5.0 (Windows NT 10.0; Win64; x64; [restbot]) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36\"",
-                "--disable-popup-blocking", "--extensions-on-chrome-urls", "--user-data-dir=" + sessionDataPath,
+                "--disable-popup-blocking", "--disable-default-apps", "--no-first-run", "--extensions-on-chrome-urls", "--user-data-dir=" + sessionDataPath,
                 "--load-extension=" + extensionPath, "about:blank"];
 
             if (req.socketData.autoOpenDeveloperTools) {

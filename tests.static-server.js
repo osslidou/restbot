@@ -69,6 +69,6 @@ exports.start = function (port) {
     }
 
     app.listen(port);
-    console.log("Static server running at http://localhost:" + port + "/");
+    console.log("Static: http://localhost:" + port + "/");
 }
 

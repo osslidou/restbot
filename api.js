@@ -316,6 +316,7 @@ module.exports = function (hostname, port) {
 
             screenshot: function () { return runOrQueue(this, { name: 'screenshot', request: { verb: 'GET', path: getDocPath('screenshot') } }); },
             fullPageScreenshot: function (increaseFactor) { return runOrQueue(this, { name: 'fullPageScreenshot', request: { verb: 'GET', path: getDocPath('fullpage_screenshot'), postData: increaseFactor } }); },
+            sendKey: function (keyInfo) { return runOrQueue(this, { name: 'send_key', request: { verb: 'PUT', path: getDocPath('send_key'), postData: keyInfo } }); },
             invoke: function (path, func) { return runOrQueue(this, { name: 'invoke', request: { verb: 'PUT', path: getDocPath('invoke', path), postData: { value: func } } }); },
             inject: function (path, func) { return runOrQueue(this, { name: 'inject', request: { verb: 'PUT', path: getDocPath('inject', path), postData: { value: func } } }); },
             resetToDefaultFrame: function (frameId) { return runOrQueue(this, { name: 'resetToDefaultFrame', request: { verb: 'PUT', path: getDocPath('reset_frame') } }); },

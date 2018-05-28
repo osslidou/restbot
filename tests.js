@@ -1,226 +1,339 @@
-var api = require('./tests.lib')('localhost', 8081);
-var util = require('util');
+// note: this file contains tests that ensure that api,js functions are working properly, using restbot's test files (see restbot project->test html files)
+const api = require('./api')('localhost', 8081);
 
-var mod = {};
+// uncomment this to use restbot from a remote/local VM
+// const api = require('./restbot-api')('10.161.162.77', 8081);
 
-mod.other = function* () {
-    yield api.put('b1', '', null, { code: [200, 409] });
-    var testAppUrl = 'http://localhost:8082/tests.html';
-    yield api.put('b1', '/url', { value: testAppUrl });
+api.setOptions({
+    clientTimeoutInSeconds: 1,
+    throttleRequestsInMilliSeconds: 0
+});
 
-    yield api.put('b1', '/doc/id=inputs/input/eq(1)?focus');
-    yield api.put('b1', '/doc/id=inputs/input/eq(1)?send_key', { keyEventType: 'char', keyEventText: 'txt' });
-    // type: 'rawKeyDown', keyIdentifier: 'Enter'
-    //yield api.put('b1', '/doc/id=inputs/.buttons/input/eq(0)?click');        
-}
+const mainUrl = 'http://localhost:8082/tests.html';
+const popupUrl = 'http://localhost:8082/tests.popup.html';
 
-mod.main = function* () {
+async function objectApi() {
+    let b1 = await api.start('b1');
+    let allBrowsers = await api.list();
+    if (allBrowsers.indexOf('b1') == -1)
+        throw Error("b1 should be in the browser list");
+
+    api.log('_____ url');
+    await b1.setUrl(popupUrl);
+    await b1.getUrl();
+    await b1.assertEquals(popupUrl);
+
+    api.log('_____ url batch')
+    await b1.batch(() => {
+        b1.setUrl(mainUrl)
+            .getUrl()
+            .assertEquals(mainUrl);
+    });
+
+    api.log('_____ locators');
+    await b1.batch(() => {
+        b1.getValue('/body^tagName').assertEquals('BODY')
+            .getValue('/div/class=list1^tagName').assertEquals('UL')
+            .getValue('/div/.list1^tagName').assertEquals('UL')
+    });
+
+    api.log('_____ functions');
+    await b1.batch(() => {
+        b1.getValue('/div/.list1/parent()^tagName').assertEquals('DIV')
+            .getText('/div/.list1/li/siblings()/eq(0)').assertEquals('item 1')
+            .getText('/div/.list1/li/siblings()/eq(2)').assertEquals('item 3')
+            .getText('/head/title').assertEquals('test page')
+    });
+
+    api.log('_____ attributes & properties');
+    await b1.batch(() => {
+        b1.getValue('/id=inputs/type=checkbox@checked').assertEquals('checked')
+            .getValue('/id=inputs/type=checkbox^checked').assertEquals(true)
+    });
+
+    api.log('_____ count / get / set value / sendKey/ getClientRectangle - using attributes & properties');
+    await b1.batch(() => {
+        b1.getCount('/div/.list1/li').assertEquals(3)
+            .getValue('/id=inputs/input/eq(1)^value').assertEquals('initial')
+            .setValue('/id=inputs/input/eq(1)', 'updated')
+            .getValue('/id=inputs/input/eq(1)^value').assertEquals('updated')
+            .getValue('/id=inputs/input/eq(1)@value').assertEquals('initial')
+
+            .setValue('/id=inputs/input/eq(1)@name', 'name1')
+            .getValue('/id=inputs/input/eq(1)@name').assertEquals('name1')
+
+            .focus('/id=inputs/input/eq(1)')
+            .sendKey({ keyEventType: 'char', keyEventText: '_' })
+            .sleep(.5)
+            .getValue('/id=inputs/input/eq(1)^value').assertEquals('updated_');
+    });
+
+    const button1Rectangle = await b1.getClientRectangle('/id=setvalue');
+    const button2Rectangle = await b1.getClientRectangle('/id=visibility');
+
+    if (button1Rectangle.x > button2Rectangle.x)
+        throw new Error('Error fetching buttons clientRectangle');
+
+    api.log('_____ mouse + check visibility + check exists + wait exists');
+    await b1.batch(() => {
+        b1.getText('/id=result').assertEquals('')
+            .click('/id=inputs/.buttons/input/eq(0)')
+            .getText('/id=result').assertEquals('clicked')
+            .checkVisible('/id=result').assertEquals(true)
+            .mouse('/id=inputs/.buttons/input/eq(1)', 'mouseenter,mouseover')
+            .checkVisible('/id=result').assertEquals(false)
+            .mouse('/id=inputs/.buttons/input/eq(1)', 'mouseout')
+            .checkVisible('/id=result').assertEquals(true)
+            .checkExists('/id=result').assertEquals(true)
+            .checkExists('/id=result_bad', 0).assertEquals(false)
+            .waitExists('/id=result').assertEquals(true)
+
+    });
+
     try {
-        var result;
-        yield api.put('b1', '', null, { code: [200, 409] });
-        yield api.put('b1', '', null, { code: 409 }); // 409 conflict - already there
-        yield api.get('', '', { value: ['b1'] });
-
-        console.log('_____ url');
-        var testAppUrl = 'http://localhost:8082/tests.html';
-        yield api.put('b1', '/url', { value: testAppUrl });
-        yield api.get('b1', '/url', { value: testAppUrl });
-
-        console.log('_____ locators');
-        yield api.get('b1', '/doc/body^tagName?get_value', { value: 'BODY' });
-        yield api.get('b1', '/doc/div/class=list1^tagName?get_value', { value: 'UL' });
-        yield api.get('b1', '/doc/div/.list1^tagName?get_value', { value: 'UL' });
-
-        console.log('_____ functions');
-        yield api.get('b1', '/doc/div/.list1/parent()^tagName?get_value', { value: 'DIV' });
-        yield api.get('b1', '/doc/div/.list1/li/siblings()/eq(0)?get_text', { value: 'item 1' });
-        yield api.get('b1', '/doc/div/.list1/li/siblings()/eq(2)?get_text', { value: 'item 3' });
-
-        console.log('_____ attributes & properties');
-        yield api.get('b1', '/doc/id=inputs/type=checkbox@checked?get_value', { value: 'checked' });
-        yield api.get('b1', '/doc/id=inputs/type=checkbox@checked', { code: 400 }); // bad request when no action is provided
-        yield api.get('b1', '/doc/id=inputs/type=checkbox^checked?get_value', { value: true });
-
-        console.log('_____ count / get / set value / set focus / get_info - using attributes & properties');
-        yield api.get('b1', '/doc/div/.list1/li?count', { value: 3 });
-        yield api.get('b1', '/doc/id=inputs/input/eq(1)^value?get_value', { value: 'initial' });
-        yield api.put('b1', '/doc/id=inputs/input/eq(1)?focus');
-        yield api.put('b1', '/doc/id=inputs/input/eq(1)?set_value', { value: 'updated' });
-        yield api.get('b1', '/doc/id=inputs/input/eq(1)^value?get_value', { value: 'updated' });
-        yield api.get('b1', '/doc/id=inputs/input/eq(1)@value?get_value', { value: 'initial' });
-        yield api.put('b1', '/doc/id=inputs/input/eq(1)@name?set_value', { value: 'name1' });
-        yield api.get('b1', '/doc/id=inputs/input/eq(1)@name?get_value', { value: 'name1' });
-
-        console.log('_____ mouse + check visibility + check exists + wait exists');
-        yield api.get('b1', '/doc/id=result?get_text', { value: '' });
-        yield api.put('b1', '/doc/id=inputs/.buttons/input/eq(0)?click');
-        yield api.get('b1', '/doc/id=result?get_text', { value: 'clicked' });
-        yield api.get('b1', '/doc/id=result?check_visible', { value: true });
-
-        yield api.put('b1', '/doc/id=inputs/.buttons/input/eq(1)?mouse', { value: 'mouseenter,mouseover' });
-        yield api.get('b1', '/doc/id=result?check_visible', { value: false });
-        yield api.put('b1', '/doc/id=inputs/.buttons/input/eq(1)?mouse', { value: 'mouseout' });
-        yield api.get('b1', '/doc/id=result?check_visible', { value: true });
-
-        yield api.get('b1', '/doc/id=result?check_exists', { value: true });
-        yield api.get('b1', '/doc/id=result_bad?check_exists', { value: false }, 0);
-
-        yield api.get('b1', '/doc/id=result?wait_exists', { value: true });
-        yield api.get('b1', '/doc/id=result_bad?wait_exists', { code: 404 });
-
-        console.log('_____ set var');
-        yield api.post('b1', '/doc/div/.list1?set_var');
-        yield api.get('b1', '/doc/$0/li/eq(0)?get_text', { value: 'item 1' });
-
-        yield api.post('b1', '/doc/body/h1?set_var', { value: 'return elem.parent();' });
-        yield api.get('b1', '/doc/$0^tagName?get_value', { value: 'BODY' });
-        yield api.get('b1', '/doc/$1/li/eq(0)?get_text', { value: 'item 1' }); // accesses one-before-last var
-
-        yield api.post('b1', '/doc?set_var', { value: 'return elem.find("*:contains(\'item 2\'):last");' });
-        yield api.get('b1', '/doc/$0?get_text', { value: 'item 2' });
-        yield api.get('b1', '/doc/$4?get_text', { code: [500] });
-
-        console.log('_____ screenshot');
-        yield api.get('b1', '/doc/?screenshot');
-
-        console.log('_____ unsupported action');
-        yield api.get('b1', '/doc?unknownAction', { code: [500] });
-
-        console.log('_____ invoke function');
-        yield api.put('b1', '/doc?invoke', { value: 'return "hello";' }, { value: 'hello' });
-
-        console.log('_____ inject function - auto confirm system confirm messagebox');
-        yield api.put('b1', '/doc?inject', { value: 'window.confirm = function(){return true;};' });
-        yield api.put('b1', '/doc/id=openConfirm?click');
-        yield api.get('b1', '/doc/id=openConfirm^value?get_value', { value: 'confirm_yes' });
-
-        console.log('_____ cookies access');
-        yield api.put('b1', '/url', { value: testAppUrl });
-        yield api.get('b1', '/cookies', { value: [] });
-        yield api.get('b1', '/cookies/ck1', { value: null });
-        yield api.put('b1', '/cookies/ck1', { value: '123' });
-        yield api.get('b1', '/cookies/ck1', { value: '123' });
-        yield api.get('b1', '/cookies', { value: ['ck1'] });
-        yield api.del('b1', '/cookies/ck1');
-        yield api.get('b1', '/cookies/ck1', { value: null });
-        yield api.get('b1', '/cookies', { value: [] });
-
-        console.log('_____ get / delete browser errors');
-        yield api.put('b3', '', null, { code: [200, 409] });
-        yield api.put('b3', '/url', { value: 'http://localhost:8082/tests.popup.html' });
-
-        result = yield api.get('b3', '/errors', { value: [] });
-
-        yield api.put('b3', '/doc/id=errorOnClick?click');
-
-        result = yield api.get('b3', '/errors');
-        var expectedErrorCheck = result.value[0] && result.value[0].message && result.value[0].message.indexOf('xhttp is not defined') > -1
-        if (!expectedErrorCheck)
-            throw new Error('Unable to fetch the error');
-
-        yield api.del('b3', '/errors');
-        yield api.get('b3', '/errors', { value: [] });
-        yield api.del('b3');
-
-        console.log('_____ views : info / set_active / close');
-        var tabInfo = yield api.get('b1', '/views');
-        var initialTabCount = tabInfo.value.length;
-
-        yield api.put('b1', '/doc/id=openTab?click');
-        yield api.put('b1', '/doc/id=openPopup?click');
-
-        tabInfo = yield api.get('b1', '/views');
-        var newTabCount = tabInfo.value.length;
-
-        if (newTabCount - 2 !== initialTabCount)
-            throw new Error('Failed to open the 2 tabs - initial:' + initialTabCount + ' - new:' + newTabCount);
-
-        yield api.put('b1', '/views/' + tabInfo.value[1].id);
-        yield api.put('b1', '/doc/id=input_text?set_value', { value: 'hello from other tab' });
-        result = yield api.get('b1', '/doc/id=input_text^value?get_value');
-        var textValueInOtherTab = result.value;
-
-        yield api.put('b1', '/views/' + tabInfo.value[0].id);
-        result = yield api.get('b1', '/doc/id=input_text^value?get_value');
-        var textValueInFirstTab = result.value;
-
-        if (textValueInFirstTab === textValueInOtherTab)
-            throw new Error('Text not updated in other tab');
-
-        for (var i = initialTabCount; i < tabInfo.value.length; i++)
-            yield api.del('b1', '/views/' + tabInfo.value[i].id);
-
-        console.log('_____ tabs: error scenarios');
-        yield api.del('b1', '/views/999', null, { code: 500 });
-
-        result = yield api.get('b1', '/views');
-        var finalCount = result.value.length;
-        if (finalCount != initialTabCount)
-            throw new Error('Failed to close the last 2 tabs');
-
-        // opens another tab and attempt to close it with del(/views)
-        yield api.put('b1', '/doc/id=openTab?click');
-        tabInfo = yield api.get('b1', '/views');
-        initialTabCount = tabInfo.value.length;
-
-        yield api.del('b1', '/views');
-        var afterCloseTabInfo = yield api.get('b1', '/views');
-        var afterCloseTabCount = afterCloseTabInfo.value.length;
-
-        if ((afterCloseTabCount + 1) !== initialTabCount)
-            throw new Error('Unable to close the tab');
-
-        console.log('______ refresh, back, forward')
-        yield api.put('b1', '/doc/id=inputs/input/eq(1)?set_value', { value: 'updated' });
-        yield api.get('b1', '/doc/id=inputs/input/eq(1)^value?get_value', { value: 'updated' });
-        yield api.put('b1', '/doc?refresh');
-        yield api.get('b1', '/doc/id=inputs/input/eq(1)^value?get_value', { value: 'initial' });
-
-        yield api.put('b1', '/doc/id=nextPage?click');
-        yield api.put('b1', '/doc?back');
-        yield api.get('b1', '/doc/head/title?get_text', { value: 'test page' });
-        yield api.put('b1', '/doc?forward');
-        yield api.get('b1', '/doc/head/title?get_text', { value: 'popup page' });
-
-        console.log('_____ kill instances');
-        yield api.del('b1');
-        yield api.del('b2', null, null, { code: 404 });
-
-        for (var i = 0; i < 3; i++) {
-            yield api.put(i, '');
-            yield api.del(i, '', { cleanupSessionData: true }, { code: [204] });
-        }
-
-        console.log('_____ views : position-size-state');
-        yield api.put('b1');
-        const TARGET_WIDTH = 640, TARGET_HEIGHT = 480, TARGET_TOP = 0, TARGET_LEFT = 1;
-        yield api.put('b1', '/views', { width: TARGET_WIDTH, height: TARGET_HEIGHT, top: TARGET_TOP, left: TARGET_LEFT });
-        var info = yield api.get('b1', '/views');
-        if (info.value[0].width !== TARGET_WIDTH
-            || info.value[0].height !== TARGET_HEIGHT
-            || info.value[0].top !== TARGET_TOP
-            || info.value[0].left !== TARGET_LEFT)
-            throw new Error('Failed to set window position and size');
-
-        yield api.put('b1', '/views', { state: "minimized" });
-        info = yield api.get('b1', '/views');
-        if (info.value[0].state !== "minimized")
-            throw new Error('Failed to set window state');
-
-        yield api.del('b1');
-
-        console.log('_____ folder and opened-sessions cleanup');
-        yield api.put('b1', '', null, { code: [200, 409] });
-        yield api.put('b1', '/url', { value: testAppUrl });
-        yield api.del('', '', null, { code: [204] });
-
-        console.log("-- SUCCESS\n");
+        await b1.waitExists('/id=result_bad')
     }
-    catch (e) {
-        console.log("-- ERROR3:\n", e);
+    catch (ex) {
+        if (ex.code != 404)
+            throw ex;
     }
+
+    api.log('_____ set let');
+    await b1.batch(() => {
+        b1.setVar('/div/.list1')
+            .getText('/$0/li/eq(0)').assertEquals('item 1')
+            .setVar('/body/h1', 'return elem.parent();')
+            .getValue('/$0^tagName').assertEquals('BODY')
+            .getText('/$1/li/eq(0)').assertEquals('item 1') // accesses one-before-last let
+            .setVar('', 'return elem.find("*:contains(\'item 2\'):last");')
+            .getText('/$0').assertEquals('item 2')
+    });
+
+    api.log('_____ screenshot');
+    await b1.screenshot();
+
+    api.log('_____ invoke function');
+    await b1.batch(() => {
+        b1.invoke('', 'return "hello";')
+            .assertEquals('hello')
+            .invoke('/id=firstTitle', 'let para = document.createElement("p");let node = document.createTextNode("This is new.");para.appendChild(node);elem[0].appendChild(para);')
+    });
+    // todo: verify that it worked!
+
+    api.log('_____ inject function - auto confirm system confirm messagebox');
+    await b1.batch(() => {
+        b1.inject('', 'window.confirm = function(){return true;};')
+            .click('/id=openConfirm')
+            .getValue('/id=openConfirm^value').assertEquals('confirm_yes')
+    });
+
+    api.log('_____ iframes access');
+    const newId = api.newGuid();
+    await b1.batch(() => {
+        b1.setUrl(popupUrl)
+            .switchFrame("tests.popup.inner.html")
+            .setValue('/body/id=inputs_popup/input/eq(1)', newId)
+            .getValue('/body/id=inputs_popup/input/eq(1)^value')
+            .assertEquals(newId)
+            .resetToDefaultFrame()
+            .checkExists('/h1[id=firstTitle]')
+            .assertEquals(true)
+    });
+
+    api.log('_____ cookies access');
+    await b1.batch(() => {
+        b1.setUrl(mainUrl)
+            .getCookies().assertEquals([])
+            .getCookieValue('ck1').assertEquals(null)
+            .setCookieValue('ck1', '123')
+            .getCookieValue('ck1').assertEquals('123')
+            .getCookies().assertEquals(['ck1'])
+            .deleteCookie('ck1')
+            .getCookies().assertEquals([])
+    });
+
+    api.log('_____ get / delete browser errors');
+    const b3 = await api.start('b3');
+    await b3.batch(() => {
+        b3.setUrl(popupUrl)
+            .getErrors().assertEquals([])
+            .click('/id=errorOnClick')
+    });
+
+    const errors = await b3.getErrors();
+    const expectedErrorCheck = errors[0] && errors[0].message && errors[0].message.indexOf('xhttp is not defined') > -1
+    if (!expectedErrorCheck)
+        throw new Error('Unable to fetch the error');
+
+    await b3.batch(() => {
+        b3.clearErrors()
+            .getErrors().assertEquals([])
+            .kill()
+    });
+
+    await b1.setUrl(mainUrl);
+    api.log('_____ views : info / set_active / close');
+    let tabInfo = await b1.getViews();
+    let initialTabCount = tabInfo.length;
+
+    await b1.click('/id=openTab');
+    await b1.click('/id=openPopup');
+
+    tabInfo = await b1.getViews();
+    let newTabCount = tabInfo.length;
+
+    if (newTabCount - 2 !== initialTabCount)
+        throw new Error('Failed to open the 2 tabs - initial:' + initialTabCount + ' - new:' + newTabCount);
+
+    await b1.setActiveView(tabInfo[1].id);
+    await b1.setValue('/id=input_text', 'hello from other tab');
+
+    const textValueInOtherTab = await b1.getValue('/id=input_text^value');
+
+    await b1.setActiveView(tabInfo[0].id);
+    const textValueInFirstTab = await b1.getValue('/id=input_text^value');
+
+    if (textValueInFirstTab === textValueInOtherTab)
+        throw new Error('Text not updated in other tab');
+
+    for (let i = initialTabCount; i < tabInfo.length; i++)
+        await b1.closeView(tabInfo[i].id);
+
+    tabInfo = await b1.getViews();
+    const finalCount = tabInfo.length;
+    if (finalCount != initialTabCount)
+        throw new Error('Failed to close the last 2 tabs');
+
+    // opens another tab and attempt to close it with del(/views)
+    await b1.click('/id=openTab');
+    tabInfo = await b1.getViews();
+    initialTabCount = tabInfo.length;
+
+    await b1.closeActiveView();;
+    tabInfo = await b1.getViews();
+    newTabCount = tabInfo.length;
+
+    if ((newTabCount + 1) !== initialTabCount)
+        throw new Error('Unable to close the tab');
+
+    api.log('_____ views : position-size-state');
+    const TARGET_WIDTH = 1024, TARGET_HEIGHT = 480, TARGET_TOP = 0, TARGET_LEFT = 1;
+    await b1.updateViews({ width: TARGET_WIDTH, height: TARGET_HEIGHT, top: TARGET_TOP, left: TARGET_LEFT });
+    let info = await b1.getViews();
+    if (info[0].width !== TARGET_WIDTH
+        || info[0].height !== TARGET_HEIGHT
+        || info[0].top !== TARGET_TOP
+        || info[0].left !== TARGET_LEFT)
+        throw new Error('Failed to set window position and size');
+
+    await b1.updateViews({ state: api.enums.WINDOWS_STATE.minimized });
+    info = await b1.getViews();
+
+    if (info[0].state !== api.enums.WINDOWS_STATE.minimized)
+        throw new Error('Failed to set window state');
+
+    await b1.kill();
+
+    api.log('_____ kill instances / destroy');
+    for (let i = 0; i < 3; i++) {
+        let b = await api.start(i);
+        await b.kill(true);
+    }
+
+    b1 = await api.start('b1');
+    const allSessionsDestroyed = await api.destroyAllSessions();
+    allBrowsers = await api.list();
+
+    if (!allSessionsDestroyed || allBrowsers.length !== 0)
+        throw new Error('Failed to destroy all sessions');
+
+    api.log('_____ sleep, pause and attach');
+    b1 = await api.start('b1');
+    await b1.batch(() => {
+        b1.setUrl(mainUrl)
+            .sleep(1)
+            .pause()
+            .kill()
+    });
+
+    api.log('_____ back, forward, refresh')
+    b1 = await api.start('b1');
+    await b1.batch(() => {
+        b1.setUrl(mainUrl)
+            .setValue('/id=inputs/input/eq(1)', 'updated')
+            .getValue('/id=inputs/input/eq(1)^value').assertEquals('updated')
+            .refresh()
+            .getValue('/id=inputs/input/eq(1)^value').assertEquals('initial')
+            .click('/id=nextPage')
+            .back()
+            .getText('/head/title').assertEquals('test page')
+            .forward()
+            .getText('/head/title').assertEquals('popup page')
+    });
+
+    // attach without parameters should attach to the first one & work
+    b1 = await api.attach();
+    await b1.kill();
+
+    api.log('_____ network stats');
+    b1 = await api.start('b1');
+    await b1.enableNetworkStats();
+    await b1.setUrl(mainUrl);
+    await b1.click('/id=openLongRunningHttpRequest');
+    const networkStats = await b1.getNetworkStats();
+
+    // ensure we have a 404 in the network stats requests
+    const has404 = networkStats.filter(({ status }) => status === 404).length > 0;
+    const hasPendingRequests = networkStats.filter(({ status }) => status === 0).length > 0;
+    if (!has404 || !hasPendingRequests)
+        throw new Error('Failed to get network stats');
+
+    const latestTimeStamp = await b1.getNetworkStatsLatestTimestamp();
+    const networkStats2 = await b1.getNetworkStats(latestTimeStamp);
+    if (networkStats2.length !== 0)
+        throw new Error('Failed to filter network stats');
+
+    await b1.kill();
+
+    api.log('END');
 }
 
-mod.init = function (params) { }
+objectApi();
 
-api.runInteractive(mod, process.argv);
+async function fullPageScreenshot() {
+    const b1 = await api.start('b1');
+    await b1.setUrl(mainUrl)
+    await b1.updateViews({ width: 800, height: 300 });
+    const { data: bytes } = await b1.fullPageScreenshot();
+    const buffer = new Buffer(bytes, 'base64');
+    const fs = require('fs');
+    fs.writeFile('image.png', buffer);
+    api.log('-- done');
+    await b1.kill();
+}
+
+//fullPageScreenshot();
+
+async function wip() {
+    const b1 = await api.start('b1');
+
+    await b1.batch(() => {
+        b1.setUrl(mainUrl)
+            .focus('/id=inputs/input/eq(1)')
+            .sendKey({ keyEventType: 'char', keyEventText: 'txt' })
+            .sleep(.5)
+            .getValue('/id=inputs/input/eq(1)^value').assertEquals('updated');
+    });
+
+
+
+
+    //await b1.kill();
+
+    //await b1.updateViews({ state: api.enums.WINDOWS_STATE.minimized });
+    //await b1.pause();
+
+    //await b1.kill();
+}
+
+//wip();
