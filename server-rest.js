@@ -394,13 +394,14 @@ module.exports = {
                         uuid = require('node-uuid'),
                         out = fs.createWriteStream(downloadFilePath, { autoClose: false });
 
-                    console.log(`-- downloading chrominium v${CHROMINIUM_VERSION}...`);
+                    console.log(`-- downloading chrominium v${CHROMINIUM_VERSION} - this may take several minutes...`);
                     var req = request({ method: 'GET', uri: chrominiumPath });
                     req.pipe(out);
                     req.on('end', function () {
                         fs.close(out.fd, async function () {
-                            await checkExistsWithTimeout('chrome.win32.zip', 2000);
-                            var archive = new AdmZip("chrome.win32.zip");
+                            // the file is fully downloaded at this point, just waiting for the file to be written to disk & accessible
+                            await checkExistsWithTimeout(downloadFilePath, 2000);
+                            var archive = new AdmZip(downloadFilePath);
                             var path = require('path');
                             var tmpPath = path.join(os.tmpdir(), uuid.v1());
                             console.log(`-- extracting to: ${tmpPath}`);
@@ -423,30 +424,31 @@ module.exports = {
         }
 
         function checkExistsWithTimeout(path, timeout) {
+            console.log(`-- check exists ${path}...`);
             return new Promise((resolve, reject) => {
-                const timeoutTimerId = setTimeout(handleTimeout, timeout)
-                const interval = timeout / 6
-                let intervalTimerId
+                const timeoutTimerId = setTimeout(handleTimeout, timeout);
+                const interval = timeout / 6;
+                let intervalTimerId;
 
                 function handleTimeout() {
-                    clearTimeout(timerId)
-                    const error = new Error('path check timed out')
-                    error.name = 'PATH_CHECK_TIMED_OUT'
-                    reject(error)
+                    clearTimeout(timeoutTimerId);
+                    const error = new Error('path check timed out');
+                    error.name = 'PATH_CHECK_TIMED_OUT';
+                    reject(error);
                 }
 
                 function handleInterval() {
                     fs.access(path, (err) => {
                         if (err) {
-                            intervalTimerId = setTimeout(handleInterval, interval)
+                            intervalTimerId = setTimeout(handleInterval, interval);
                         } else {
-                            clearTimeout(timeoutTimerId)
-                            resolve(path)
+                            clearTimeout(timeoutTimerId);
+                            resolve(path);
                         }
                     })
                 }
 
-                intervalTimerId = setTimeout(handleInterval, interval)
+                intervalTimerId = setTimeout(handleInterval, interval);
             })
         }
     }
