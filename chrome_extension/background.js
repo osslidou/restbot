@@ -441,10 +441,54 @@ function parseIncomingNetworkMessage() {
 
     let round2 = (nb) => Math.round(nb * 1e2) / 1e2;
 
+    const setNetworkResponseFinished = function (requestData, params) {
+        requestData.length = params.encodedDataLength;
+        requestData.totalTime = round2(1000 * (params.timestamp - requestData.startTime));
+        return requestData;
+    };
+
+    const setNetworkResponseData = function (requestData, response) {
+        if (response.protocol === "data")
+            // when protocol== data, the url is the data itself (this polutes the logs)
+            requestData.url = "data:[...]"
+
+        else
+            requestData.url = response.url;
+
+        var chromeTiming = response.timing;
+        var timing = {};
+        if (chromeTiming) {
+            timing.dns = round2(chromeTiming.dnsEnd - chromeTiming.dnsStart);
+            timing.initialConnection = round2(chromeTiming.connectEnd - chromeTiming.connectStart);
+            timing.ssl = round2(chromeTiming.sslEnd - chromeTiming.sslStart);
+            timing.requestSent = round2(chromeTiming.sendEnd - chromeTiming.sendStart);
+        }
+
+        requestData.type = response.mimeType;
+        requestData.status = response.status;
+        requestData.timing = timing;
+        if (response.status !== 200)
+            requestData.statusText = response.statusText;
+
+        return requestData;
+    };
+
     attachOrReuseDebugger(debuggeeId, function () {
         chrome.debugger.sendCommand(debuggeeId, "Network.enable");
         chrome.debugger.onEvent.addListener(function (debuggeeId, message, params) {
             if (message === 'Network.requestWillBeSent') {
+
+                // special case: if it has a 'redirectResponse', use it to "finilize" the initial request
+                if (params.redirectResponse) {
+                    var requestData = networkRequests.get(params.requestId);
+                    if (requestData) {
+                        requestData = setNetworkResponseData(requestData, params.redirectResponse);
+                        requestData = setNetworkResponseFinished(requestData, params);
+                        // generate a new requestId for the old one (else it will be overwritten!)
+                        networkRequests.set(newGuid(), requestData)
+                    }
+                }
+
                 networkRequests.set(params.requestId, {
                     startTime: params.timestamp,
                     method: params.request.method,
@@ -457,36 +501,26 @@ function parseIncomingNetworkMessage() {
                 if (requestData === undefined) /* case we receive events that started before the capturing started */
                     return;
 
-                if (params.response.protocol === "data")
-                    // when protocol== data, the url is the data itself (this polutes the logs)
-                    requestData.url = "data:[...]"
-
-                else
-                    requestData.url = params.response.url;
-
-                var chromeTiming = params.response.timing;
-                var timing = {};
-                if (chromeTiming) {
-                    timing.dns = round2(chromeTiming.dnsEnd - chromeTiming.dnsStart);
-                    timing.initialConnection = round2(chromeTiming.connectEnd - chromeTiming.connectStart);
-                    timing.ssl = round2(chromeTiming.sslEnd - chromeTiming.sslStart);
-                    timing.requestSent = round2(chromeTiming.sendEnd - chromeTiming.sendStart);
-                }
-
-                requestData.type = params.response.mimeType;
-                requestData.status = params.response.status;
-                requestData.timing = timing;
-                if (params.response.status !== 200)
-                    requestData.statusText = params.response.statusText;
+                requestData = setNetworkResponseData(requestData, params.response);
 
             } else if (message === 'Network.loadingFinished') {
                 var requestData = networkRequests.get(params.requestId);
                 if (requestData === undefined) /* case we receive events that started before the capturing started */
                     return;
 
-                requestData.length = params.encodedDataLength;
-                requestData.totalTime = round2(1000 * (params.timestamp - requestData.startTime));
+                requestData = setNetworkResponseFinished(requestData, params);
             }
         });
     });
+}
+
+function newGuid() {
+    function s4() {
+        return Math.floor((1 + Math.random()) * 0x10000)
+            .toString(16)
+            .substring(1);
+    }
+
+    return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+        s4() + '-' + s4() + s4() + s4();
 }
