@@ -377,8 +377,8 @@ module.exports = {
                 throw new Error('OS not supported - platform = ' + os.platform());
             }
 
-            var chrominiumFolder = `chrominium.v${CHROMINIUM_VERSION}`;
-            var browserFullPath = `${chrominiumFolder}\\chrome.exe`;
+            var chrominiumFolderName = `chrominium.v${CHROMINIUM_VERSION}`;
+            var browserFullPath = path.resolve(__dirname, chrominiumFolderName, 'chrome.exe');
             var browserUserDataFolder = path.join(os.tmpdir(), 'restbot_cache'); // mac: process.env.TMPDIR + "/google_data/restbot";
 
             const downloadAndUnzip = function () {
@@ -407,7 +407,7 @@ module.exports = {
                             console.log(`-- extracting to: ${tmpPath}`);
                             archive.extractAllTo(tmpPath);
                             console.log('-- moving/cleaning up...');
-                            fse.moveSync(path.join(tmpPath, 'chrome-win32'), chrominiumFolder, { overwrite: true });
+                            fse.moveSync(path.join(tmpPath, 'chrome-win32'), chrominiumFolderName, { overwrite: true });
                             fs.unlinkSync(downloadFilePath);
                             console.log('-- done!');
                             resolve();
