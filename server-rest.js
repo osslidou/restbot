@@ -377,8 +377,8 @@ module.exports = {
                 throw new Error('OS not supported - platform = ' + os.platform());
             }
 
-            var chrominiumFolderName = `chrominium.v${CHROMINIUM_VERSION}`;
-            var browserFullPath = path.resolve(__dirname, chrominiumFolderName, 'chrome.exe');
+            var chrominiumFolderName = path.resolve(__dirname, `chrominium.v${CHROMINIUM_VERSION}`);
+            var browserFullPath = path.resolve(chrominiumFolderName, 'chrome.exe');
             var browserUserDataFolder = path.join(os.tmpdir(), 'restbot_cache'); // mac: process.env.TMPDIR + "/google_data/restbot";
 
             const downloadAndUnzip = function () {
