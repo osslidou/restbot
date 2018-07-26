@@ -195,4 +195,3 @@ This returns an array of page errors.
 **delete**  
 Clear page errors
 `[DELETE] http://restbot-vm1/browser1/errors`
-

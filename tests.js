@@ -300,6 +300,24 @@ async function objectApi() {
 
 objectApi();
 
+async function requestApiTests() {
+    const fullConsole = (obj) => {
+        const util = require('util');
+        api.log(util.inspect(obj, false, null));
+    }
+
+    const baseApiUrl = `http://localhost:8081`;
+
+    let response = await api.apiRequest({
+        url: baseApiUrl
+    });
+
+
+    fullConsole(response);
+}
+
+//requestApiTests();
+
 async function fullPageScreenshot() {
     const b1 = await api.start('b1');
     await b1.setUrl(mainUrl)

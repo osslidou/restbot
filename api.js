@@ -1,5 +1,7 @@
 const querystring = require('querystring');
 const http = require('http');
+const https = require('https');
+const urlParser = require('url');
 
 process.on('unhandledRejection', error => {
     const exitCode = error.code || -1
@@ -149,7 +151,7 @@ module.exports = function (hostname, port) {
             '] ';
     }
 
-    function runHttpRequest(methodName, apiRequest) {
+    async function runHttpRequest(methodName, apiRequest) {
         const options = {
             host: hostname,
             port: port,
@@ -169,14 +171,38 @@ module.exports = function (hostname, port) {
             options.headers['Content-Length'] = apiRequest.postData.length;
         }
 
-        return new Promise(function (resolve, reject) {
-            const result = {};
-            const req = http.request(options, function (res) {
-                res.setEncoding('utf8');
+        return await runRequestAsync(options, apiRequest.postData, { methodName: methodName });
+    }
 
+    api.apiRequest = async function (params) {
+        let { verb, url, headers, body } = params;
+
+        let options = urlParser.parse(url);
+
+        options.method = verb || 'GET';
+
+        if (!headers)
+            options.headers = {};
+        else
+            options.headers = headers;
+
+        if (body) {
+            body = JSON.stringify(body);
+            options.headers["Content-Type"] = "application/json";
+            options.headers["Content-Length"] = body.length;
+        }
+        return await runRequestAsync(options, body);
+    }
+
+    function runRequestAsync(options, body, initialResult) {
+        const requestFunction = options.protocol === 'https:' ? https.request : http.request;
+
+        return new Promise(function (resolve, reject) {
+            const result = initialResult || {};
+            const req = requestFunction(options, function (res) {
+                res.setEncoding('utf8');
                 result.value = '';
                 result.statusCode = res.statusCode;
-                result.methodName = methodName;
 
                 res.on('data', function (chunk) {
                     result.value += chunk;
@@ -206,8 +232,9 @@ module.exports = function (hostname, port) {
                 reject(result);
             });
 
-            if (apiRequest.postData)
-                req.write(apiRequest.postData);
+            if (body) {
+                req.write(body);
+            }
 
             req.end();
         });
