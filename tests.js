@@ -298,25 +298,39 @@ async function objectApi() {
     api.log('END');
 }
 
-objectApi();
+//objectApi();
 
 async function requestApiTests() {
-    const fullConsole = (obj) => {
-        const util = require('util');
-        api.log(util.inspect(obj, false, null));
-    }
-
     const baseApiUrl = `http://localhost:8081`;
 
-    let response = await api.apiRequest({
-        url: baseApiUrl
+    const ensureExpectedBrowsersCount = async (expected) => {
+        const { value } = await api.apiRequest({
+            url: baseApiUrl
+        });
+        if (value.length !== expected)
+            throw new Error(`expected '${expected}' but received '${value.length}' browsers`);
+    };
+
+    await ensureExpectedBrowsersCount(0);
+
+    // start browser
+    await api.apiRequest({
+        url: `${baseApiUrl}/b1`,
+        verb: 'PUT',
     });
 
+    await ensureExpectedBrowsersCount(1);
 
-    fullConsole(response);
+    // stop browser
+    await api.apiRequest({
+        url: `${baseApiUrl}/b1`,
+        verb: 'DELETE',
+    });
+
+    await ensureExpectedBrowsersCount(0);
 }
 
-//requestApiTests();
+requestApiTests();
 
 async function fullPageScreenshot() {
     const b1 = await api.start('b1');

@@ -2,6 +2,7 @@ const querystring = require('querystring');
 const http = require('http');
 const https = require('https');
 const urlParser = require('url');
+const util = require('util');
 
 process.on('unhandledRejection', error => {
     const exitCode = error.code || -1
@@ -112,7 +113,7 @@ module.exports = function (hostname, port) {
     api.log = function (...args) {
         api.logEntries.push(args);
         const timestamp = formatConsoleDate(new Date());
-        console.log(...[timestamp, ...args]);
+        console.log(...[timestamp, util.inspect(...args, false, null)]);
     }
 
     api.resetLogs = function () {
@@ -176,7 +177,6 @@ module.exports = function (hostname, port) {
 
     api.apiRequest = async function (params) {
         let { verb, url, headers, body } = params;
-
         let options = urlParser.parse(url);
 
         options.method = verb || 'GET';
