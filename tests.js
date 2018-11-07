@@ -298,7 +298,7 @@ async function objectApi() {
     api.log('END');
 }
 
-//objectApi();
+objectApi();
 
 async function requestApiTests() {
     const baseApiUrl = `http://localhost:8081`;
@@ -330,7 +330,7 @@ async function requestApiTests() {
     await ensureExpectedBrowsersCount(0);
 }
 
-requestApiTests();
+//requestApiTests();
 
 async function fullPageScreenshot() {
     const b1 = await api.start('b1');
