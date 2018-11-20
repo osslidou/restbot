@@ -391,7 +391,6 @@ module.exports = {
                         fse = require('fs-extra'),
                         request = require('request'),
                         AdmZip = require('adm-zip'),
-                        uuid = require('node-uuid'),
                         out = fs.createWriteStream(downloadFilePath, { autoClose: false });
 
                     console.log(`-- downloading chrominium v${CHROMINIUM_VERSION} - this may take several minutes...`);
