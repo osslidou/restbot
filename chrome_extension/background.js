@@ -7,6 +7,7 @@ var apiUrl = 'http://localhost:' + APP_PORT + '/';
 var pageErrors = [];
 let networkRequests = new Map(); // map[requestId, {requestData}]
 var activeFrameId = 0;
+var activeWindowId = -1;
 var contentScriptCode = '';
 
 chrome.runtime.onMessage.addListener(pageErrorsListener);
@@ -88,7 +89,6 @@ function runActionInBrowser(socket, data) {
 
         case "set_active_view":
             chrome.tabs.update(data.tabId, { active: true }, function (tabs) {
-
                 if (chrome.runtime.lastError) {
                     console.log('--' + data.cmd + ' error');
                     data.error_code = 500;
@@ -96,7 +96,7 @@ function runActionInBrowser(socket, data) {
                     socket.emit('cmd_out', data);
                     return;
                 }
-
+                activeWindowId = tabs.windowId;
                 socket.emit('cmd_out', data);
                 console.log('--' + data.cmd + ' done:', data);
             });
@@ -119,7 +119,7 @@ function runActionInBrowser(socket, data) {
             break;
 
         case "set_views_info":
-            chrome.windows.getCurrent(function (wind) {
+            getActiveWindow(function (wind) {
                 var updateInfo = {};
                 // data is passed as string, we cannot use || since a top/left position of (0,0) should be supported
                 if (data.top)
@@ -169,10 +169,21 @@ function handlePause(socket, data) {
     });
 }
 
+function getActiveWindow(cb) {
+    if (activeWindowId === -1) {
+        chrome.windows.getCurrent({}, function (window) { cb(window) });
+    } else {
+        chrome.windows.get(activeWindowId, {}, function (window) { cb(window) });
+    }
+}
+
 function findActiveTabAndRunAction(socket, data) {
-    chrome.windows.getCurrent({}, function (window) {
+    getActiveWindow(function (window) {
         try {
-            chrome.tabs.query({ active: true }, function (tabs) {
+            chrome.tabs.query({
+                windowId: window.id,
+                active: true
+            }, function (tabs) {
                 tab = tabs[0]; // only work with the active tab - and there is only one active tab!             
                 runActionInActivePage(socket, tab, data);
             });
