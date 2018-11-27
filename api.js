@@ -366,8 +366,9 @@ module.exports = function (hostname, port) {
 
             getViews: function () { return runOrQueue(this, { name: 'getViews', request: { verb: 'GET', path: '/views' } }); },
             setActiveView: function (id) { return runOrQueue(this, { name: 'setActiveView', request: { verb: 'PUT', path: `/views/${id}` } }); },
+            resetActiveView: function () { return runOrQueue(this, { name: 'setActiveView', request: { verb: 'PUT', path: `/views/-1` } }); },
             closeView: function (id) { return runOrQueue(this, { name: 'closeView', request: { verb: 'DELETE', path: `/views/${id}` } }); },
-            closeActiveView: function (id) { return runOrQueue(this, { name: 'closeActiveView', request: { verb: 'DELETE', path: `/views` } }); },
+            closeActiveView: function () { return runOrQueue(this, { name: 'closeActiveView', request: { verb: 'DELETE', path: `/views` } }); },
             updateViews: function (updateInfo) { return runOrQueue(this, { name: 'updateViews', request: { verb: 'PUT', path: '/views', postData: updateInfo } }); },
 
             sleep: function (valueInSeconds) { return runOrQueue(this, { name: 'sleep', request: { verb: 'POST', path: '/?sleep', postData: { value: valueInSeconds } } }) },
