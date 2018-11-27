@@ -171,9 +171,9 @@ function handlePause(socket, data) {
 
 function getActiveWindow(cb) {
     if (activeWindowId === -1) {
-        chrome.windows.getCurrent({}, function (window) { cb(window) });
+        chrome.windows.getCurrent({}, (window) => cb(window));
     } else {
-        chrome.windows.get(activeWindowId, {}, function (window) { cb(window) });
+        chrome.windows.get(activeWindowId, {}, (window) => cb(window));
     }
 }
 
