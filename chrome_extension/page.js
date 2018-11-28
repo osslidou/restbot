@@ -88,8 +88,9 @@ function messageListener(request, sender, sendResponse) {
 
                 case "wait_visible":
                     var hidden = elem.is(":hidden") || elem.css("visibility") == "hidden";
-                    if (!hidden) {
-                        data.retVal = true;
+                    if (hidden) {
+                        // hidden = not found (so it will be retried)
+                        data.error_code = 404;
                     }
                     break;
 
