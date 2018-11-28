@@ -335,6 +335,7 @@ module.exports = function (hostname, port) {
             checkVisible: function (path, timeoutInSeconds) { return runOrQueue(this, { name: 'checkVisible', request: { verb: 'GET', path: getDocPath('check_visible', path), timeout: timeoutInSeconds || 0 } }); },
             checkExists: function (path, timeoutInSeconds) { return runOrQueue(this, { name: 'checkExists', request: { verb: 'GET', path: getDocPath('check_exists', path), timeout: timeoutInSeconds || 0 } }); },
             waitExists: function (path, timeoutInSeconds) { return runOrQueue(this, { name: 'waitExists', request: { verb: 'GET', path: getDocPath('wait_exists', path), timeout: timeoutInSeconds } }); },
+            waitVisible: function (path, timeoutInSeconds) { return runOrQueue(this, { name: 'waitVisible', request: { verb: 'GET', path: getDocPath('wait_visible', path), timeout: timeoutInSeconds } }); },
 
             click: function (path) { return runOrQueue(this, { name: 'click', request: { verb: 'PUT', path: getDocPath('click', path) } }); },
             mouse: function (path, buttons) { return runOrQueue(this, { name: 'mouse', request: { verb: 'PUT', path: getDocPath('mouse', path), postData: { value: buttons } }, }); },
