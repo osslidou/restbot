@@ -86,7 +86,14 @@ function messageListener(request, sender, sendResponse) {
                     data.retVal = true;
                     break;
 
-                case "wait_visible", "check_visible":
+                case "wait_visible":
+                    var hidden = elem.is(":hidden") || elem.css("visibility") == "hidden";
+                    if (!hidden) {
+                        data.retVal = true;
+                    }
+                    break;
+
+                case "check_visible":
                     var hidden = elem.is(":hidden") || elem.css("visibility") == "hidden";
                     data.retVal = !hidden;
                     break;
