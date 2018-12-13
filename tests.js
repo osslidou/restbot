@@ -247,15 +247,6 @@ async function objectApi() {
     if (!allSessionsDestroyed || allBrowsers.length !== 0)
         throw new Error('Failed to destroy all sessions');
 
-    api.log('_____ sleep, pause and attach');
-    b1 = await api.start('b1');
-    await b1.batch(() => {
-        b1.setUrl(mainUrl)
-            .sleep(1)
-            .pause()
-            .kill()
-    });
-
     api.log('_____ back, forward, refresh')
     b1 = await api.start('b1');
     await b1.batch(() => {
@@ -347,23 +338,17 @@ async function fullPageScreenshot() {
 //fullPageScreenshot();
 
 async function wip() {
+
     const b1 = await api.start('b1');
-
-    await b1.batch(() => {
-        b1.setUrl(mainUrl)
-            .focus('/id=inputs/input/eq(1)')
-            .sendKey({ keyEventType: 'char', keyEventText: 'txt' })
-            .sleep(.5)
-            .getValue('/id=inputs/input/eq(1)^value').assertEquals('updated');
-    });
-
-
+    await b1.setUrl(mainUrl);
+    await b1.waitExists('/id=res__ult');
+    await b1.waitExists('/id=result');
+    await b1.kill();
 
 
     //await b1.kill();
 
     //await b1.updateViews({ state: api.enums.WINDOWS_STATE.minimized });
-    //await b1.pause();
 
     //await b1.kill();
 }

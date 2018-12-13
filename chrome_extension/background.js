@@ -9,8 +9,11 @@ let networkRequests = new Map(); // map[requestId, {requestData}]
 var activeFrameId = 0;
 var activeWindowId = -1;
 var contentScriptCode = '';
+var isTerminateNextAction = false;
 
 chrome.runtime.onMessage.addListener(pageErrorsListener);
+
+chrome.browserAction.onClicked.addListener(mainButtonClick);
 
 getFileContents(JQUERY_JS, function (contents1) {
     getFileContents(PAGE_JS, function (content2) {
@@ -26,8 +29,17 @@ function setupSocketClient(apiUrl) {
 
     socket.on('cmd', function (data) {
         console.log('cmd: ' + data.cmd);
-        data.frameId = activeFrameId;
-        runActionInBrowser(socket, data);
+
+        if (isTerminateNextAction) {
+            isTerminateNextAction = false;
+            data.error_code = 508;
+            data.error_message = 'stop action requested by user';
+            socket.emit('cmd_out', data);
+        }
+        else {
+            data.frameId = activeFrameId;
+            runActionInBrowser(socket, data);
+        }
     });
 
     // extension is started and ready - notify the server    
@@ -151,22 +163,10 @@ function runActionInBrowser(socket, data) {
             console.log('--' + data.cmd + ' done:', data);
             break;
 
-        case "pause":
-            handlePause(socket, data);
-            break;
-
         default:
             // runs all other actions in the current window & tab
             findActiveTabAndRunAction(socket, data);
     }
-}
-
-function handlePause(socket, data) {
-    setExtensionIcon(true);
-    chrome.browserAction.onClicked.addListener(function (tab) {
-        socket.emit('cmd_out', data);
-        setExtensionIcon();
-    });
 }
 
 function getActiveWindow(cb) {
@@ -425,12 +425,8 @@ function pageErrorsListener(request) {
     }
 }
 
-function setExtensionIcon(isPauseIcon) {
-    let iconPath = 'default.png';
-    if (isPauseIcon)
-        iconPath = 'play4.png';
-
-    chrome.browserAction.setIcon({ path: iconPath });
+function mainButtonClick() {
+    isTerminateNextAction = true;
 }
 
 function attachOrReuseDebugger(debuggeeId, callback) {

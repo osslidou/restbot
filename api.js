@@ -372,7 +372,6 @@ module.exports = function (hostname, port) {
             updateViews: function (updateInfo) { return runOrQueue(this, { name: 'updateViews', request: { verb: 'PUT', path: '/views', postData: updateInfo } }); },
 
             sleep: function (valueInSeconds) { return runOrQueue(this, { name: 'sleep', request: { verb: 'POST', path: '/?sleep', postData: { value: valueInSeconds } } }) },
-            pause: function () { return runOrQueue(this, { name: 'pause', request: { verb: 'POST', path: '/?pause' } }); }, // sends pause test signal, returns after the user clicks on the resume button
 
             assertEquals: function (value) { return runOrQueue(this, { name: 'assertEquals', expected: value }) },
             batch: function (f) {
