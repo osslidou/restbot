@@ -113,7 +113,7 @@ module.exports = function (hostname, port) {
     api.log = function (...args) {
         api.logEntries.push(args);
         const timestamp = formatConsoleDate(new Date());
-        console.log(...[timestamp, util.inspect(...args, false, null)]);
+        console.log(`${timestamp} ${args}`);
     }
 
     api.resetLogs = function () {
