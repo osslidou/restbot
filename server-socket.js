@@ -46,12 +46,13 @@ exports.start = function (restServer, serverData) {
             if (socketData.error_code === 404) {
                 var now = new Date();
                 var expiry = new Date(socketData.requestExpiry);
-                var requestExpired = (expiry.getTime() - now.getTime()) < 0;
+                var requestTimeRemainingInMs = expiry.getTime() - now.getTime();
+                var requestExpired = requestTimeRemainingInMs < 0;
 
                 if (!requestExpired) {
                     // request not expired, retry...
                     socketData.error_code = socketData.error_message = undefined;
-                    console.log('-- [' + browserId.substr(0, 5) + ']', socketData.cmd + ' - ' + socketData.path);
+                    console.log(`-- [${browserId.substr(0, 5)}|${(requestTimeRemainingInMs / 1000).toFixed(1)}] ${socketData.cmd} - ${socketData.path}`);
                     setTimeout(function () { socket.emit('cmd', socketData); }, 500);
                     return;
                 }
