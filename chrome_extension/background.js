@@ -32,8 +32,9 @@ function setupSocketClient(apiUrl) {
 
         if (isTerminateNextAction) {
             isTerminateNextAction = false;
-            data.error_code = 508;
-            data.error_message = 'stop action requested by user';
+            data.requestExpiry = 0; // this short-circuits the socket-server retry logic
+            data.error_code = 404;
+            data.error_message = 'User Cancelled';
             socket.emit('cmd_out', data);
         }
         else {
