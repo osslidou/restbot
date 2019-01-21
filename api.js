@@ -176,7 +176,7 @@ module.exports = function (hostname, port) {
     }
 
     api.apiRequest = async function (params) {
-        let { verb, url, headers, body } = params;
+        let { verb, url, headers, body, certificate } = params;
         let options = urlParser.parse(url);
 
         options.method = verb || 'GET';
@@ -190,6 +190,11 @@ module.exports = function (hostname, port) {
             body = JSON.stringify(body);
             options.headers["Content-Type"] = "application/json";
             options.headers["Content-Length"] = body.length;
+        }
+
+        if (certificate) {
+            options.key = certificate.key;
+            options.cert = certificate.cert;
         }
         return await runRequestAsync(options, body);
     }
