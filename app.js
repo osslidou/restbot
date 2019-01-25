@@ -1,7 +1,4 @@
-﻿const Enums = require('./enums');
-const WINDOWS_SERVICE_NAME = 'Restbot'
-const WINDOWS_SERVICE_DESCRIPTION = 'Resbot node.js service'
-const APP_PORT = 8081;
+﻿const APP_PORT = 8081;
 const STATIC_PORT = 8082;
 
 // starts static test webserver
@@ -17,6 +14,4 @@ restServer.start(APP_PORT, serverData, function (server) {
     socketServer.start(server, serverData);
 });
 
-process.on('uncaughtException', function (err) {
-    console.log('process.on(uncaughtException): ' + err + '\n');
-});
+process.on('uncaughtException', (err) => console.log(`ERR: ${err.message}`));
