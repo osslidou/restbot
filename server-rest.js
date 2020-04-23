@@ -142,7 +142,7 @@ module.exports = {
                 extensionPath = extensionPath + "," + titleExtensionPath
 
             var spawn = childProcess.spawn;
-            var startupArgs = ["--no-default-browser-check", "--no-first-run", "--test-type", "--ignore-certificate-errors",
+            var startupArgs = ["--disable-xss-auditor --no-default-browser-check", "--no-first-run", "--test-type", "--ignore-certificate-errors",
                 "--user-agent=\"Mozilla/5.0 (Windows NT 10.0; Win64; x64; [restbot]) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36\"",
                 "--disable-popup-blocking", "--disable-default-apps", "--no-first-run", "--extensions-on-chrome-urls", "--user-data-dir=" + sessionDataPath,
                 "--load-extension=" + extensionPath, "about:blank"];
