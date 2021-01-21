@@ -10,7 +10,7 @@
     "fs-extra": "7.0.1",
     "node-uuid": "1.4.8",
     "request": "2.88.0",
-    "socket.io": "2.1.1"
+    "socket.io": "2.4.0"
   },
   "devDependencies": {},
   "author": "lidou"
