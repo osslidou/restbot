@@ -6,7 +6,7 @@
   "dependencies": {
     "adm-zip": "0.4.13",
     "body-parser": "1.18.3",
-    "express": "4.16.4",
+    "express": "4.17.3",
     "fs-extra": "7.0.1",
     "node-uuid": "1.4.8",
     "request": "2.88.0",
